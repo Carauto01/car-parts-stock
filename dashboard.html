@@ -26,7 +26,7 @@
     </div>
     <nav>
       <ul>
-        <li><a href="dashboard.html" class="active">📊 แดชบอร์ด</a></li>
+        <li><a href="dashboard.html" class="active">📊 ภาพรวม</a></li>
         <li><a href="stock.html">📦 สต็อก</a></li>
         <li><a href="sales.html">🛒 ขาย</a></li>
         <li><a href="reports.html">📋 รายงาน</a></li>
@@ -74,34 +74,29 @@
         </div>
       </div>
 
-      <!-- Charts -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); gap: 20px;">
-        <!-- Sales Chart -->
+      <!-- แถวกราฟ: ยอดขายรายวันกินพื้นที่มากกว่า เพราะมี 7 จุดต้องอ่าน -->
+      <div class="dash-row wide-left">
         <div class="card">
           <h2>📈 ยอดขายรายวัน (7 วันที่ผ่านมา)</h2>
-          <canvas id="salesChart"></canvas>
+          <div class="chart-box"><canvas id="salesChart"></canvas></div>
         </div>
 
-        <!-- Top Products -->
         <div class="card">
-          <h2>🏆 สินค้าขายดี 5 อันดับ (ตามจำนวนที่ขายได้)</h2>
-          <canvas id="topProductsChart"></canvas>
+          <h2>🏆 สินค้าขายดี 5 อันดับ</h2>
+          <div class="chart-box"><canvas id="topProductsChart"></canvas></div>
         </div>
+      </div>
 
-        <!-- Stock Status -->
+      <!-- แถวรายการ: กว้างเท่ากัน สูงเท่ากัน -->
+      <div class="dash-row even">
         <div class="card">
-          <h2>⚠️ สต็อกต่ำ (เหลือ < 5 ชิ้น)</h2>
-          <div id="lowStockList">
-            <p style="text-align: center; color: var(--text-faint);">ข้อมูลกำลังโหลด...</p>
-          </div>
+          <h2>⚠️ สต็อกต่ำ (เหลือน้อยกว่า 5 ชิ้น)</h2>
+          <div class="list-body" id="lowStockList"></div>
         </div>
 
-        <!-- Recent Sales -->
         <div class="card">
           <h2>🛒 ธุรกรรมล่าสุด</h2>
-          <div id="recentSalesList">
-            <p style="text-align: center; color: var(--text-faint);">ข้อมูลกำลังโหลด...</p>
-          </div>
+          <div class="list-body" id="recentSalesList"></div>
         </div>
       </div>
 
@@ -194,6 +189,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -231,6 +227,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: c => `ขายไป ${c.parsed.y} ชิ้น` } }
@@ -239,36 +236,42 @@
         }
       });
 
-      // Low Stock List
-      const lowStock = demoData.products.filter(p => p.quantity < 5);
-      const lowStockHTML = lowStock.length > 0
+      // Low Stock List — เรียงจากเหลือน้อยสุดขึ้นก่อน จะได้รู้ว่าต้องสั่งอะไรด่วน
+      const lowStock = demoData.products
+        .filter(p => p.quantity < 5)
+        .sort((a, b) => a.quantity - b.quantity);
+
+      document.getElementById('lowStockList').innerHTML = lowStock.length > 0
         ? lowStock.map(p => `
-          <div style="padding: 10px; border-bottom: 1px solid var(--border);">
-            <strong>${p.name}</strong>
-            <span class="badge badge-danger">เหลือ ${p.quantity} ชิ้น</span>
+          <div class="list-row">
+            <div class="list-main">
+              <div class="list-title">${p.name}</div>
+              <div class="list-sub">${p.category || 'ไม่ระบุประเภท'}</div>
+            </div>
+            <span class="badge ${p.quantity === 0 ? 'badge-danger' : 'badge-warning'}">${p.quantity === 0 ? 'หมดสต็อก' : 'เหลือ ' + p.quantity + ' ชิ้น'}</span>
           </div>
         `).join('')
-        : '<p style="text-align: center; color: var(--text-muted);">✅ สต็อกทั้งหมดพอดี</p>';
-      document.getElementById('lowStockList').innerHTML = lowStockHTML;
+        : `<div class="empty-state"><div class="empty-icon">✅</div><div>สต็อกทุกรายการเพียงพอ</div></div>`;
 
-      // Recent Sales
-      const recentSales = demoData.sales.slice(-3).reverse();
-      const recentHTML = recentSales.length > 0
-        ? recentSales.map(s => {
-            const first = s.items[0];
-            const label = s.items.length > 1
-              ? `${first.name} +อีก ${s.items.length - 1} รายการ`
+      // Recent Sales — 5 บิลล่าสุด ใหม่สุดอยู่บน
+      const recentSales = demoData.sales.slice(-5).reverse();
+
+      document.getElementById('recentSalesList').innerHTML = recentSales.length > 0
+        ? recentSales.map(sale => {
+            const first = sale.items[0] || { name: 'ไม่มีรายการ' };
+            const label = sale.items.length > 1
+              ? `${first.name} +อีก ${sale.items.length - 1} รายการ`
               : first.name;
             return `
-        <div style="padding: 10px; border-bottom: 1px solid var(--border);">
-          <strong>${label}</strong><br>
-          <small style="color: var(--text-faint);">${formatDate(s.date)}</small>
-          <span style="float: right; font-weight: bold; color: var(--primary);">${formatCurrency(s.total)}</span>
-        </div>
-      `;
+          <div class="list-row">
+            <div class="list-main">
+              <div class="list-title">${label}</div>
+              <div class="list-sub">${formatDate(sale.date)} · ${sale.customer || 'ลูกค้าทั่วไป'}</div>
+            </div>
+            <div class="list-value">${formatCurrency(sale.total)}</div>
+          </div>`;
           }).join('')
-        : '<p style="text-align: center; color: var(--text-muted);">ยังไม่มีรายการขาย</p>';
-      document.getElementById('recentSalesList').innerHTML = recentHTML;
+        : `<div class="empty-state"><div class="empty-icon">🧾</div><div>ยังไม่มีรายการขาย</div></div>`;
     }
 
     function exportDashboard() {

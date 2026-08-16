@@ -296,9 +296,112 @@ h1, h2, h3 {
 }
 
 .container {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 24px 28px 40px;
+}
+
+/* --------------------------------------------------------------------------
+   โครงแดชบอร์ด: แถวละ 2 การ์ด ความสูงเท่ากันอัตโนมัติ ไม่มีการ์ดลอยเดี่ยว
+   -------------------------------------------------------------------------- */
+.dash-row {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 18px;
+  align-items: stretch;
+}
+
+.dash-row.wide-left {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+
+.dash-row.even {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dash-row > .card {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* พื้นที่กราฟสูงเท่ากันทุกใบ ไม่ว่าข้อมูลจะมากน้อย */
+.chart-box {
+  position: relative;
+  flex: 1;
+  min-height: 260px;
+}
+
+.chart-box canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* รายการในลิสต์ (สต็อกต่ำ / ธุรกรรมล่าสุด) */
+.list-body {
+  flex: 1;
+  min-height: 200px;
+}
+
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.list-row:last-child {
+  border-bottom: none;
+}
+
+.list-main {
+  min-width: 0;
+}
+
+.list-title {
+  font-weight: 600;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.list-sub {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 1px;
+}
+
+.list-value {
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ไม่มีข้อมูล — จัดกลางกล่อง ไม่ใช่บรรทัดเดียวลอยบนสุด */
+.empty-state {
+  height: 100%;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.empty-state .empty-icon {
+  font-size: 26px;
+  opacity: 0.75;
+}
+
+@media (max-width: 1100px) {
+  .dash-row.wide-left,
+  .dash-row.even {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ==========================================================================
