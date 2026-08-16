@@ -53,18 +53,19 @@
       const password = document.getElementById('password').value;
       const errorMsg = document.getElementById('errorMsg');
 
-      // ชั่วคราวใช้ localStorage (เพื่อ demo) จนกว่า Supabase auth setup
-      // ผู้ใช้มาจาก js/store.js — แก้ไขได้ที่หน้า "ผู้ใช้งาน"
-      const user = findUserByLogin(username, password);
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'กำลังเข้าสู่ระบบ...';
+      errorMsg.style.display = 'none';
+
+      // login() อยู่ใน js/store.js — เช็คกับฐานข้อมูลถ้าต่อ Supabase แล้ว
+      const user = await login(username, password);
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'เข้าสู่ระบบ';
 
       if (user) {
-        saveLocalUser({
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          role: user.role,
-          permissions: user.permissions || []
-        });
+        saveLocalUser(user);
         
         currentUser = getLocalUser();
         userRole = currentUser.role;
@@ -73,15 +74,16 @@
         
         setTimeout(() => {
           window.location.href = 'dashboard.html';
-        }, 1500);
+        }, 900);
       } else {
         errorMsg.textContent = '❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
         errorMsg.style.display = 'block';
       }
     });
 
-    // ตรวจสอบว่าล็อกอินอยู่แล้ว
-    if (getLocalUser()) {
+    // ล็อกอินค้างอยู่แล้วก็ข้ามหน้านี้ไปเลย
+    // (โหมด Supabase ต้องมี token ด้วย ไม่งั้นข้อมูลเก่าค้างจะพาไปหน้าที่โหลดไม่ได้)
+    if (getLocalUser() && (!USE_SUPABASE || getToken())) {
       window.location.href = 'dashboard.html';
     }
   </script>

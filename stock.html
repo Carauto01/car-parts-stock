@@ -154,8 +154,8 @@
       document.getElementById('usersMenu').style.display = 'block';
     }
 
-    // ข้อมูลสินค้าจาก store (ใช้ร่วมกับหน้าขาย/รายงาน)
-    let products = getProducts();
+    // ข้อมูลสินค้าจาก store (เติมค่าเมื่อโหลดเสร็จ)
+    let products = [];
 
     let editingId = null;
 
@@ -251,40 +251,47 @@
       }
     }
 
-    document.getElementById('productForm').addEventListener('submit', (e) => {
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      const preview = document.getElementById('imagePreview');
       const formData = {
+        id: editingId || null,
         name: document.getElementById('productName').value,
         category: document.getElementById('category').value,
         cost: parseFloat(document.getElementById('costPrice').value),
         price: parseFloat(document.getElementById('sellPrice').value),
         quantity: parseInt(document.getElementById('quantity').value),
-        image: document.getElementById('imagePreview').src || ''
+        // ถ้าไม่ได้เลือกรูป <img> จะยังไม่มี src อย่าเก็บ URL ของหน้าเว็บไปเป็นรูปสินค้า
+        image: preview.style.display === 'none' ? '' : (preview.getAttribute('src') || '')
       };
 
-      if (editingId) {
-        const product = products.find(p => p.id === editingId);
-        if (product) {
-          Object.assign(product, formData);
-          showNotification('แก้ไขสินค้าสำเร็จ', 'success');
-        }
-      } else {
-        products.push({ id: nextId(products), ...formData });
-        showNotification('เพิ่มสินค้าใหม่สำเร็จ', 'success');
-      }
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
 
-      saveProducts(products);
-      closeProductModal();
-      loadProducts();
+      try {
+        await saveProduct(formData);
+        showNotification(editingId ? 'แก้ไขสินค้าสำเร็จ' : 'เพิ่มสินค้าใหม่สำเร็จ', 'success');
+        closeProductModal();
+        products = getProducts();
+        loadProducts();
+      } catch (err) {
+        showNotification('❌ บันทึกไม่สำเร็จ: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
     });
 
-    function deleteProduct(id) {
-      if (confirm('ต้องการลบสินค้านี้หรือไม่?')) {
-        products = products.filter(p => p.id !== id);
-        saveProducts(products);
+    async function deleteProduct(id) {
+      if (!confirm('ต้องการลบสินค้านี้หรือไม่?')) return;
+
+      try {
+        await removeProduct(id);
+        products = getProducts();
         showNotification('ลบสินค้าสำเร็จ', 'success');
         loadProducts();
+      } catch (err) {
+        showNotification('❌ ลบไม่สำเร็จ: ' + err.message, 'error');
       }
     }
 
@@ -298,7 +305,11 @@
 
     document.getElementById('searchBox').addEventListener('input', loadProducts);
 
-    loadProducts();
+    // รอข้อมูลโหลดเสร็จก่อน แล้วค่อยแสดงตาราง
+    dataReady.then(() => {
+      products = getProducts();
+      loadProducts();
+    });
   </script>
 </body>
 </html>

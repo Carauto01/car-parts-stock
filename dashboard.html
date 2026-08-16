@@ -124,11 +124,8 @@
       document.getElementById('usersMenu').style.display = 'block';
     }
 
-    // ข้อมูลจริงจาก store (ใช้ร่วมกับหน้าสต็อก/ขาย/รายงาน)
-    const demoData = {
-      products: getProducts(),
-      sales: getSales()
-    };
+    // ข้อมูลจาก store (Supabase หรือ localStorage แล้วแต่การตั้งค่า)
+    const demoData = { products: [], sales: [] };
 
     // เก็บอ็อบเจกต์กราฟไว้ เพื่อวาดใหม่ตอนสลับโหมดมืด/สว่าง
     let salesChartObj = null;
@@ -279,8 +276,12 @@
       exportToCSV(data, 'dashboard_' + new Date().toISOString().split('T')[0] + '.csv');
     }
 
-    // Load data on page load
-    loadDashboard();
+    // รอข้อมูลโหลดเสร็จก่อน แล้วค่อยวาดหน้าจอ
+    dataReady.then(() => {
+      demoData.products = getProducts();
+      demoData.sales = getSales();
+      loadDashboard();
+    });
   </script>
 </body>
 </html>

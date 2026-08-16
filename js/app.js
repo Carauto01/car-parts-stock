@@ -202,10 +202,11 @@ function debugLog(message, data = null) {
 }
 
 // ฟังก์ชันออกจากระบบ (ใช้ร่วมกันทุกหน้า)
-function logout() {
-  if (confirm('ต้องการออกจากระบบหรือไม่?')) {
-    clearLocalUser();
-    window.location.href = 'index.html';
-  }
+async function logout() {
+  if (!confirm('ต้องการออกจากระบบหรือไม่?')) return;
+
+  if (typeof logoutSession === 'function') await logoutSession();
+  clearLocalUser();
+  window.location.href = 'index.html';
 }
 

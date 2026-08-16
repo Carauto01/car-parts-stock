@@ -1,7 +1,7 @@
 // 🔧 ตั้งค่า Supabase ที่นี่
 // ถ้ายังไม่กรอกค่าจริง ระบบจะทำงานใน "Demo Mode" (เก็บข้อมูลใน localStorage) โดยอัตโนมัติ
-const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // เช่น https://xxxxx.supabase.co
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY'; // anon/public key
+const SUPABASE_URL = 'https://hebnokrvhexmkuuhgqoa.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlYm5va3J2aGV4bWt1dWhncW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4OTAwMDMsImV4cCI6MjEwMjQ2NjAwM30.rRRJIt0rf-Ie52eRci_b20QX6xMkHcO1JCZnS4Lg2HI';
 
 // ตรวจว่ากรอกค่าจริงหรือยัง (createClient จะ throw ถ้า URL ไม่ใช่ http/https)
 const SUPABASE_READY =

@@ -13,6 +13,10 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- Supabase ติดตั้ง pgcrypto ไว้ที่ schema "extensions" ไม่ใช่ "public"
+-- ทุกฟังก์ชันจึงต้องมี extensions ใน search_path ไม่งั้นเรียก crypt() ไม่เจอ
+SET search_path = public, extensions;
+
 -- ==========================================================================
 -- 1. ตาราง
 -- ==========================================================================
@@ -118,7 +122,7 @@ CREATE OR REPLACE FUNCTION app_uid(p_token UUID)
 RETURNS BIGINT
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_uid BIGINT;
@@ -148,7 +152,7 @@ CREATE OR REPLACE FUNCTION app_require_role(p_token UUID, p_roles TEXT[])
 RETURNS BIGINT
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_uid  BIGINT := app_uid(p_token);
@@ -172,7 +176,7 @@ CREATE OR REPLACE FUNCTION app_login(p_username TEXT, p_password TEXT)
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_user  users%ROWTYPE;
@@ -207,7 +211,7 @@ CREATE OR REPLACE FUNCTION app_logout(p_token UUID)
 RETURNS VOID
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
   DELETE FROM sessions WHERE token = p_token;
 $$;
@@ -220,7 +224,7 @@ CREATE OR REPLACE FUNCTION app_products(p_token UUID)
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   PERFORM app_uid(p_token);
@@ -244,7 +248,7 @@ CREATE OR REPLACE FUNCTION app_save_product(
 RETURNS BIGINT
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_uid BIGINT := app_require_role(p_token, ARRAY['admin', 'manager']);
@@ -287,7 +291,7 @@ CREATE OR REPLACE FUNCTION app_delete_product(p_token UUID, p_id BIGINT)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   PERFORM app_require_role(p_token, ARRAY['admin', 'manager']);
@@ -303,7 +307,7 @@ CREATE OR REPLACE FUNCTION app_sales(p_token UUID)
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   PERFORM app_uid(p_token);
@@ -337,7 +341,7 @@ CREATE OR REPLACE FUNCTION app_create_sale(
 RETURNS BIGINT
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_uid      BIGINT := app_uid(p_token);
@@ -415,7 +419,7 @@ CREATE OR REPLACE FUNCTION app_users(p_token UUID)
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   PERFORM app_require_role(p_token, ARRAY['admin']);
@@ -439,7 +443,7 @@ CREATE OR REPLACE FUNCTION app_save_user(
 RETURNS BIGINT
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_id       BIGINT;
@@ -481,7 +485,7 @@ CREATE OR REPLACE FUNCTION app_set_password(p_token UUID, p_id BIGINT, p_passwor
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   PERFORM app_require_role(p_token, ARRAY['admin']);
@@ -502,7 +506,7 @@ CREATE OR REPLACE FUNCTION app_delete_user(p_token UUID, p_id BIGINT)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_admins INT;
@@ -524,8 +528,8 @@ $$;
 -- 8. เปิดสิทธิ์เรียกเฉพาะฟังก์ชัน app_* (ตารางยังปิดตายเหมือนเดิม)
 -- ==========================================================================
 
-REVOKE ALL ON FUNCTION app_uid(UUID) FROM anon, authenticated;
-REVOKE ALL ON FUNCTION app_require_role(UUID, TEXT[]) FROM anon, authenticated;
+REVOKE ALL ON FUNCTION app_uid(UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION app_require_role(UUID, TEXT[]) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION app_login(TEXT, TEXT)            TO anon;
 GRANT EXECUTE ON FUNCTION app_logout(UUID)                 TO anon;

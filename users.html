@@ -193,7 +193,7 @@
     document.getElementById('usersMenu').style.display = 'block';
 
     // ผู้ใช้งานจาก store (ใช้จริงตอน login)
-    let users = getUsers();
+    let users = [];
 
     let editingUserId = null;
 
@@ -264,7 +264,7 @@
       document.getElementById('passwordModal').style.display = 'none';
     }
 
-    document.getElementById('userForm').addEventListener('submit', (e) => {
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const password = document.getElementById('password').value;
@@ -290,14 +290,7 @@
         ].filter(Boolean)
       };
 
-      if (editingUserId) {
-        const u = users.find(x => x.id === editingUserId);
-        if (u) {
-          Object.assign(u, userData);
-          if (password) u.password = password;
-          showNotification('แก้ไขผู้ใช้สำเร็จ', 'success');
-        }
-      } else {
+      if (!editingUserId) {
         if (!password) {
           showNotification('⚠️ กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่', 'warning');
           return;
@@ -306,13 +299,17 @@
           showNotification('⚠️ ชื่อผู้ใช้นี้มีอยู่แล้ว', 'warning');
           return;
         }
-        users.push({ id: nextId(users), password: password, ...userData });
-        showNotification('เพิ่มผู้ใช้ใหม่สำเร็จ', 'success');
       }
 
-      saveUsers(users);
-      closeUserModal();
-      loadUsers();
+      try {
+        await saveUser({ ...userData, id: editingUserId || null }, password);
+        showNotification(editingUserId ? 'แก้ไขผู้ใช้สำเร็จ' : 'เพิ่มผู้ใช้ใหม่สำเร็จ', 'success');
+        users = getUsers();
+        closeUserModal();
+        loadUsers();
+      } catch (err) {
+        showNotification('❌ บันทึกไม่สำเร็จ: ' + err.message, 'error');
+      }
     });
 
     let changingPasswordUserId = null;
@@ -323,7 +320,7 @@
       document.getElementById('passwordModal').style.display = 'block';
     }
 
-    document.getElementById('passwordForm').addEventListener('submit', (e) => {
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const newPass = document.getElementById('newPassword').value;
@@ -334,38 +331,51 @@
         return;
       }
 
-      const u = users.find(x => x.id === changingPasswordUserId);
-      if (u) {
-        u.password = newPass;
-        saveUsers(users);
+      try {
+        await setUserPassword(changingPasswordUserId, newPass);
         showNotification('✅ เปลี่ยนรหัสผ่านสำเร็จ', 'success');
         closePasswordModal();
+      } catch (err) {
+        showNotification('❌ เปลี่ยนรหัสผ่านไม่สำเร็จ: ' + err.message, 'error');
       }
     });
 
-    function deleteUser(id) {
-      if (id === 1 && users.find(u => u.id === 1).username === 'admin') {
-        showNotification('⛔ ไม่สามารถลบผู้ดูแลระบบได้', 'error');
+    async function deleteUser(id) {
+      if (id === user.id) {
+        showNotification('⛔ ลบบัญชีที่กำลังใช้งานอยู่ไม่ได้', 'error');
         return;
       }
 
-      if (confirm('ต้องการลบผู้ใช้นี้หรือไม่?')) {
-        users = users.filter(u => u.id !== id);
-        saveUsers(users);
+      if (!confirm('ต้องการลบผู้ใช้นี้หรือไม่?')) return;
+
+      try {
+        await removeUser(id);
+        users = getUsers();
         showNotification('ลบผู้ใช้สำเร็จ', 'success');
         loadUsers();
+      } catch (err) {
+        showNotification('❌ ' + err.message, 'error');
       }
     }
 
-    function resetPasswords() {
-      if (confirm('ต้องการรีเซ็ตรหัสผ่านทั้งหมดเป็น "password123" หรือไม่?')) {
-        users.forEach(u => u.password = 'password123');
-        saveUsers(users);
+    async function resetPasswords() {
+      if (!confirm('ต้องการรีเซ็ตรหัสผ่านของทุกคนเป็น "password123" หรือไม่?')) return;
+
+      try {
+        for (const u of users) {
+          await setUserPassword(u.id, 'password123');
+        }
         showNotification('✅ รีเซ็ตรหัสผ่านสำเร็จ', 'success');
+      } catch (err) {
+        showNotification('❌ รีเซ็ตไม่สำเร็จ: ' + err.message, 'error');
       }
     }
 
-    loadUsers();
+    // รอข้อมูลโหลดเสร็จก่อน แล้วค่อยแสดงรายชื่อ
+    dataReady.then(() => {
+      users = getUsers();
+      loadUsers();
+    });
   </script>
 </body>
 </html>

@@ -180,9 +180,9 @@
       document.getElementById('usersMenu').style.display = 'block';
     }
 
-    // ข้อมูลจาก store (ตรงกับหน้าสต็อกและหน้าขาย)
-    const products = getProducts();
-    const sales = getSales();
+    // ข้อมูลจาก store (เติมค่าเมื่อโหลดเสร็จ)
+    let products = [];
+    let sales = [];
 
     let categoryChart = null;
 
@@ -397,8 +397,12 @@
       }
     }
 
-    // Load initial report
-    changeReport();
+    // รอข้อมูลโหลดเสร็จก่อน แล้วค่อยสร้างรายงาน
+    dataReady.then(() => {
+      products = getProducts();
+      sales = getSales();
+      changeReport();
+    });
   </script>
 </body>
 </html>

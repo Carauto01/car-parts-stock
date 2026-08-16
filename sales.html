@@ -149,8 +149,8 @@
       document.getElementById('usersMenu').style.display = 'block';
     }
 
-    // สินค้าจาก store (ตรงกับหน้าจัดการสต็อก)
-    let products = getProducts();
+    // สินค้าจาก store (เติมค่าเมื่อโหลดเสร็จ)
+    let products = [];
 
     let cart = [];
 
@@ -252,23 +252,30 @@
       document.getElementById('total').textContent = formatCurrency(Math.max(0, total));
     }
 
-    function generateReceipt() {
+    async function generateReceipt() {
       if (cart.length === 0) {
         showNotification('⚠️ ยังไม่มีสินค้าในรายการ', 'warning');
         return;
       }
 
-      // ตัดสต็อกก่อน ถ้าของไม่พอให้ยกเลิกทั้งบิล
       const saleItems = cart.map(({ id, name, cost, price, quantity }) => ({ id, name, cost, price, quantity }));
-      if (!deductStock(saleItems)) {
-        showNotification('⚠️ สต็อกไม่พอ กรุณาตรวจสอบจำนวนอีกครั้ง', 'error');
-        loadProducts();
-        return;
-      }
-
       const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const discount = parseFloat(document.getElementById('discount').value) || 0;
       const total = subtotal - discount;
+
+      // บันทึกบิลและตัดสต็อกพร้อมกัน ถ้าของไม่พอจะไม่บันทึกอะไรเลย
+      try {
+        await createSale({
+          items: saleItems,
+          discount: discount,
+          payment: document.getElementById('paymentMethod').value,
+          customer: document.getElementById('customerName').value
+        });
+      } catch (err) {
+        showNotification('⚠️ ' + err.message, 'error');
+        loadProducts();
+        return;
+      }
       const qrData = {
         receipt: 'SALES_' + new Date().getTime(),
         total: total,
@@ -325,17 +332,6 @@
 
       document.getElementById('receiptContent').innerHTML = receiptHTML;
       document.getElementById('receiptModal').style.display = 'block';
-
-      // บันทึกรายการขายลง store (แดชบอร์ด/รายงานจะเห็นทันที)
-      addSale({
-        items: saleItems,
-        subtotal: subtotal,
-        discount: discount,
-        total: total,
-        payment: document.getElementById('paymentMethod').value,
-        customer: document.getElementById('customerName').value || 'ลูกค้าทั่วไป',
-        date: new Date().toISOString()
-      });
 
       // เคลียร์ตะกร้าและรีเฟรชสต็อกในหน้าจอ
       cart = [];
@@ -405,7 +401,11 @@
       document.getElementById(modalId).style.display = 'none';
     }
 
-    loadProducts();
+    // รอข้อมูลโหลดเสร็จก่อน แล้วค่อยแสดงรายการสินค้า
+    dataReady.then(() => {
+      loadProducts();
+      updateCart();
+    });
   </script>
 </body>
 </html>
