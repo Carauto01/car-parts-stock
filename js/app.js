@@ -44,7 +44,7 @@ function cssVar(name, fallback) {
 }
 
 if (typeof Chart !== 'undefined') {
-  Chart.defaults.font.family = "'Inter', 'Noto Sans Thai', sans-serif";
+  Chart.defaults.font.family = "'Sarabun', sans-serif";
   Chart.defaults.font.size = 12;
   Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.plugins.tooltip.cornerRadius = 8;
