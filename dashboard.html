@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แดชบอร์ด - ระบบสต็อก</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>📊 แดชบอร์ด</h1>
+    <div class="user-info">
+      <span id="userDisplay">ผู้ใช้</span>
+      <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <h2>🚗 ศูนย์แต่งรถ</h2>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="dashboard.html" class="active">📊 แดชบอร์ด</a></li>
+        <li><a href="stock.html">📦 จัดการสต็อก</a></li>
+        <li><a href="sales.html">🛒 การขาย</a></li>
+        <li><a href="reports.html">📋 รายงาน</a></li>
+        <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้งาน</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>📦 จำนวนสินค้าทั้งหมด</h3>
+          <div class="value" id="totalProducts">0</div>
+          <div class="change" id="productChange"></div>
+        </div>
+
+        <div class="stat-card">
+          <h3>💰 มูลค่าสต็อกทั้งหมด</h3>
+          <div class="value" id="totalStockValue">฿0.00</div>
+          <div class="change" id="stockChange"></div>
+        </div>
+
+        <div class="stat-card">
+          <h3>💵 ยอดขายวันนี้</h3>
+          <div class="value" id="todaySales">฿0.00</div>
+          <div class="change" id="salesChange"></div>
+        </div>
+
+        <div class="stat-card">
+          <h3>📈 กำไรสะสม</h3>
+          <div class="value" id="totalProfit">฿0.00</div>
+          <div class="change" id="profitChange"></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+        <!-- Sales Chart -->
+        <div class="card">
+          <h2>📈 ยอดขายรายวัน (7 วันที่ผ่านมา)</h2>
+          <canvas id="salesChart"></canvas>
+        </div>
+
+        <!-- Top Products -->
+        <div class="card">
+          <h2>🏆 สินค้าขายดี Top 5</h2>
+          <canvas id="topProductsChart"></canvas>
+        </div>
+
+        <!-- Stock Status -->
+        <div class="card">
+          <h2>⚠️ สต็อกต่ำ (เหลือ < 5 ชิ้น)</h2>
+          <div id="lowStockList">
+            <p style="text-align: center; color: #999;">ข้อมูลกำลังโหลด...</p>
+          </div>
+        </div>
+
+        <!-- Recent Sales -->
+        <div class="card">
+          <h2>🛒 ธุรกรรมล่าสุด</h2>
+          <div id="recentSalesList">
+            <p style="text-align: center; color: #999;">ข้อมูลกำลังโหลด...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export Options -->
+      <div class="card" style="margin-top: 20px;">
+        <h2>💾 ส่วนการดาวน์โหลด</h2>
+        <div class="btn-group">
+          <button class="btn btn-success" onclick="exportDashboard()">📊 Export รายงาน</button>
+          <button class="btn btn-info" onclick="printDashboard()">🖨️ พิมพ์แดชบอร์ด</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // ตรวจสอบ auth
+    if (!getLocalUser()) {
+      window.location.href = 'index.html';
+    }
+
+    const user = getLocalUser();
+    document.getElementById('userDisplay').textContent = `สวัสดี, ${user.name}`;
+
+    // แสดง menu "ผู้ใช้งาน" เฉพาะ admin
+    if (user.role === 'admin') {
+      document.getElementById('usersMenu').style.display = 'block';
+    }
+
+    // ข้อมูลจริงจาก store (ใช้ร่วมกับหน้าสต็อก/ขาย/รายงาน)
+    const demoData = {
+      products: getProducts(),
+      sales: getSales()
+    };
+
+    // Load Dashboard
+    async function loadDashboard() {
+      // คำนวณ Stats
+      const totalProducts = demoData.products.length;
+      const totalStockValue = demoData.products.reduce((sum, p) => sum + (p.cost * p.quantity), 0);
+      const todaySales = demoData.sales
+        .filter(s => new Date(s.date).toDateString() === new Date().toDateString())
+        .reduce((sum, s) => sum + s.total, 0);
+      const totalProfit = demoData.sales.reduce((sum, s) => sum + saleProfit(s), 0);
+
+      document.getElementById('totalProducts').textContent = totalProducts;
+      document.getElementById('totalStockValue').textContent = formatCurrency(totalStockValue);
+      document.getElementById('todaySales').textContent = formatCurrency(todaySales);
+      document.getElementById('totalProfit').textContent = formatCurrency(totalProfit);
+
+      // Chart 1: Sales by Day
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(Date.now() - i * 86400000);
+        const dateStr = date.toDateString();
+        const sales = demoData.sales
+          .filter(s => new Date(s.date).toDateString() === dateStr)
+          .reduce((sum, s) => sum + s.total, 0);
+        last7Days.push({
+          date: date.toLocaleDateString('th-TH', { weekday: 'short', month: 'numeric', day: 'numeric' }),
+          sales: sales
+        });
+      }
+
+      const ctx1 = document.getElementById('salesChart').getContext('2d');
+      new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: last7Days.map(d => d.date),
+          datasets: [{
+            label: 'ยอดขาย',
+            data: last7Days.map(d => d.sales),
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      // Chart 2: Top Products
+      const topProducts = demoData.products.slice(0, 5);
+      const ctx2 = document.getElementById('topProductsChart').getContext('2d');
+      new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: topProducts.map(p => p.name.substring(0, 10)),
+          datasets: [{
+            label: 'จำนวนสต็อก',
+            data: topProducts.map(p => p.quantity),
+            backgroundColor: '#2c3e50'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      // Low Stock List
+      const lowStock = demoData.products.filter(p => p.quantity < 5);
+      const lowStockHTML = lowStock.length > 0
+        ? lowStock.map(p => `
+          <div style="padding: 10px; border-bottom: 1px solid #ddd;">
+            <strong>${p.name}</strong>
+            <span class="badge badge-danger">เหลือ ${p.quantity} ชิ้น</span>
+          </div>
+        `).join('')
+        : '<p style="text-align: center; color: #666;">✅ สต็อกทั้งหมดพอดี</p>';
+      document.getElementById('lowStockList').innerHTML = lowStockHTML;
+
+      // Recent Sales
+      const recentSales = demoData.sales.slice(-3).reverse();
+      const recentHTML = recentSales.length > 0
+        ? recentSales.map(s => {
+            const first = s.items[0];
+            const label = s.items.length > 1
+              ? `${first.name} +อีก ${s.items.length - 1} รายการ`
+              : first.name;
+            return `
+        <div style="padding: 10px; border-bottom: 1px solid #ddd;">
+          <strong>${label}</strong><br>
+          <small style="color: #999;">${formatDate(s.date)}</small>
+          <span style="float: right; font-weight: bold; color: #e74c3c;">${formatCurrency(s.total)}</span>
+        </div>
+      `;
+          }).join('')
+        : '<p style="text-align: center; color: #666;">ยังไม่มีรายการขาย</p>';
+      document.getElementById('recentSalesList').innerHTML = recentHTML;
+    }
+
+    function exportDashboard() {
+      const data = [{
+        'วันที่': new Date().toLocaleDateString('th-TH'),
+        'จำนวนสินค้า': demoData.products.length,
+        'มูลค่าสต็อก': demoData.products.reduce((sum, p) => sum + (p.cost * p.quantity), 0),
+        'ยอดขายวันนี้': demoData.sales.filter(s => new Date(s.date).toDateString() === new Date().toDateString()).reduce((sum, s) => sum + s.total, 0),
+        'กำไรสะสม': demoData.sales.reduce((sum, s) => sum + saleProfit(s), 0)
+      }];
+      exportToCSV(data, 'dashboard_' + new Date().toISOString().split('T')[0] + '.csv');
+    }
+
+    function printDashboard() {
+      printPage('main-content', '📊 รายงานแดชบอร์ด');
+    }
+
+    // Load data on page load
+    loadDashboard();
+  </script>
+</body>
+</html>

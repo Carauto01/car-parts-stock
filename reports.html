@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายงาน - ระบบสต็อก</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>📋 รายงาน</h1>
+    <div class="user-info">
+      <span id="userDisplay">ผู้ใช้</span>
+      <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <h2>🚗 ศูนย์แต่งรถ</h2>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="dashboard.html">📊 แดชบอร์ด</a></li>
+        <li><a href="stock.html">📦 จัดการสต็อก</a></li>
+        <li><a href="sales.html">🛒 การขาย</a></li>
+        <li><a href="reports.html" class="active">📋 รายงาน</a></li>
+        <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้งาน</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <!-- Report Filters -->
+      <div class="card">
+        <h2>🔍 ตัวกรองรายงาน</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+          <div class="form-group">
+            <label for="reportType">ประเภทรายงาน</label>
+            <select id="reportType" onchange="changeReport()">
+              <option value="sales">📊 รายงานยอดขาย</option>
+              <option value="stock">📦 รายงานสต็อก</option>
+              <option value="profit">💰 รายงานกำไร</option>
+              <option value="category">🏷️ รายงานตามหมวดหมู่</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="reportPeriod">ช่วงเวลา</label>
+            <select id="reportPeriod" onchange="updateReport()">
+              <option value="today">วันนี้</option>
+              <option value="week">สัปดาห์นี้</option>
+              <option value="month">เดือนนี้</option>
+              <option value="all">ทั้งหมด</option>
+            </select>
+          </div>
+
+          <div class="btn-group" style="align-self: flex-end;">
+            <button class="btn btn-success" onclick="exportReport()">📥 Export</button>
+            <button class="btn btn-info" onclick="printReport()">🖨️ Print</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sales Report -->
+      <div id="salesReport" class="card" style="display: none;">
+        <h2>📊 รายงานยอดขาย</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th class="text-right">จำนวนรายการ</th>
+              <th class="text-right">ยอดขาย</th>
+              <th class="text-right">ต้นทุน</th>
+              <th class="text-right">กำไร</th>
+              <th class="text-right">มาร์จิน %</th>
+            </tr>
+          </thead>
+          <tbody id="salesBody">
+            <tr><td colspan="6" style="text-align: center;">ข้อมูลกำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Stock Report -->
+      <div id="stockReport" class="card" style="display: none;">
+        <h2>📦 รายงานสต็อก</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ชื่อสินค้า</th>
+              <th class="text-right">จำนวน</th>
+              <th class="text-right">ราคาทุน</th>
+              <th class="text-right">มูลค่า</th>
+              <th class="text-right">ราคาขาย</th>
+              <th class="text-right">มูลค่าขาย</th>
+              <th class="text-center">สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="stockBody">
+            <tr><td colspan="7" style="text-align: center;">ข้อมูลกำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Profit Report -->
+      <div id="profitReport" class="card" style="display: none;">
+        <h2>💰 รายงานกำไร</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px;">
+            <h3 style="margin: 0; color: #666; font-size: 14px; margin-bottom: 10px;">ยอดขายทั้งสิ้น</h3>
+            <div style="font-size: 28px; font-weight: bold; color: #2c3e50;" id="totalSalesValue">฿0.00</div>
+          </div>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px;">
+            <h3 style="margin: 0; color: #666; font-size: 14px; margin-bottom: 10px;">กำไรสะสม</h3>
+            <div style="font-size: 28px; font-weight: bold; color: #28a745;" id="totalProfitValue">฿0.00</div>
+          </div>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>สินค้า</th>
+              <th class="text-right">ขายแล้ว</th>
+              <th class="text-right">ยอดขาย</th>
+              <th class="text-right">ต้นทุน</th>
+              <th class="text-right">กำไร</th>
+              <th class="text-right">กำไร %</th>
+            </tr>
+          </thead>
+          <tbody id="profitBody">
+            <tr><td colspan="6" style="text-align: center;">ข้อมูลกำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Category Report -->
+      <div id="categoryReport" class="card" style="display: none;">
+        <h2>🏷️ รายงานตามหมวดหมู่</h2>
+        <canvas id="categoryChart" style="max-height: 400px; margin: 20px 0;"></canvas>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>หมวดหมู่</th>
+              <th class="text-right">จำนวนสินค้า</th>
+              <th class="text-right">มูลค่าสต็อก</th>
+              <th class="text-right">ยอดขาย</th>
+            </tr>
+          </thead>
+          <tbody id="categoryBody">
+            <tr><td colspan="4" style="text-align: center;">ข้อมูลกำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!getLocalUser()) {
+      window.location.href = 'index.html';
+    }
+
+    const user = getLocalUser();
+    document.getElementById('userDisplay').textContent = `สวัสดี, ${user.name}`;
+
+    if (user.role === 'admin') {
+      document.getElementById('usersMenu').style.display = 'block';
+    }
+
+    // ข้อมูลจาก store (ตรงกับหน้าสต็อกและหน้าขาย)
+    const products = getProducts();
+    const sales = getSales();
+
+    let categoryChart = null;
+
+    function changeReport() {
+      const reportType = document.getElementById('reportType').value;
+      document.getElementById('salesReport').style.display = reportType === 'sales' ? 'block' : 'none';
+      document.getElementById('stockReport').style.display = reportType === 'stock' ? 'block' : 'none';
+      document.getElementById('profitReport').style.display = reportType === 'profit' ? 'block' : 'none';
+      document.getElementById('categoryReport').style.display = reportType === 'category' ? 'block' : 'none';
+      updateReport();
+    }
+
+    function updateReport() {
+      const reportType = document.getElementById('reportType').value;
+      
+      if (reportType === 'sales') loadSalesReport();
+      else if (reportType === 'stock') loadStockReport();
+      else if (reportType === 'profit') loadProfitReport();
+      else if (reportType === 'category') loadCategoryReport();
+    }
+
+    function loadSalesReport() {
+      let html = '';
+      sales.forEach(s => {
+        const cost = saleCost(s);
+        const profit = saleProfit(s);
+        const margin = s.total > 0 ? (profit / s.total * 100).toFixed(1) : '0.0';
+
+        html += `
+          <tr>
+            <td>${formatDate(s.date)}</td>
+            <td class="text-right">${s.items.length}</td>
+            <td class="text-right">${formatCurrency(s.total)}</td>
+            <td class="text-right">${formatCurrency(cost)}</td>
+            <td class="text-right">${formatCurrency(profit)}</td>
+            <td class="text-right">${margin}%</td>
+          </tr>
+        `;
+      });
+      document.getElementById('salesBody').innerHTML = html
+        || '<tr><td colspan="6" style="text-align: center; padding: 20px;">ยังไม่มีรายการขาย</td></tr>';
+    }
+
+    function loadStockReport() {
+      let html = '';
+      products.forEach(p => {
+        const status = p.quantity < 5 ? '<span class="badge badge-danger">ต่ำ</span>' :
+                      p.quantity < 10 ? '<span class="badge badge-warning">ปานกลาง</span>' :
+                      '<span class="badge badge-success">พอดี</span>';
+        
+        const costValue = p.cost * p.quantity;
+        const saleValue = p.price * p.quantity;
+        
+        html += `
+          <tr>
+            <td>${p.name}</td>
+            <td class="text-right">${p.quantity}</td>
+            <td class="text-right">${formatCurrency(p.cost)}</td>
+            <td class="text-right">${formatCurrency(costValue)}</td>
+            <td class="text-right">${formatCurrency(p.price)}</td>
+            <td class="text-right">${formatCurrency(saleValue)}</td>
+            <td class="text-center">${status}</td>
+          </tr>
+        `;
+      });
+      document.getElementById('stockBody').innerHTML = html;
+    }
+
+    function loadProfitReport() {
+      let totalSales = 0;
+      let totalProfit = 0;
+      let html = '';
+
+      sales.forEach(s => {
+        totalSales += s.total;
+        totalProfit += saleProfit(s);
+      });
+
+      document.getElementById('totalSalesValue').textContent = formatCurrency(totalSales);
+      document.getElementById('totalProfitValue').textContent = formatCurrency(totalProfit);
+
+      products.forEach(p => {
+        // หาการขายของสินค้านี้
+        let totalSold = 0;
+        let totalSaleValue = 0;
+        let totalCost = 0;
+
+        sales.forEach(s => {
+          s.items.forEach(item => {
+            if (item.id === p.id) {
+              totalSold += item.quantity;
+              totalSaleValue += item.price * item.quantity;
+              totalCost += item.cost * item.quantity;
+            }
+          });
+        });
+
+        if (totalSold > 0) {
+          const profit = totalSaleValue - totalCost;
+          const profitPercent = (profit / totalCost * 100).toFixed(1);
+          
+          html += `
+            <tr>
+              <td>${p.name}</td>
+              <td class="text-right">${totalSold}</td>
+              <td class="text-right">${formatCurrency(totalSaleValue)}</td>
+              <td class="text-right">${formatCurrency(totalCost)}</td>
+              <td class="text-right">${formatCurrency(profit)}</td>
+              <td class="text-right">${profitPercent}%</td>
+            </tr>
+          `;
+        }
+      });
+
+      document.getElementById('profitBody').innerHTML = html;
+    }
+
+    function loadCategoryReport() {
+      const categories = {};
+
+      products.forEach(p => {
+        if (!categories[p.category]) {
+          categories[p.category] = {
+            count: 0,
+            stockValue: 0,
+            sales: 0
+          };
+        }
+        categories[p.category].count++;
+        categories[p.category].stockValue += p.cost * p.quantity;
+      });
+
+      sales.forEach(s => {
+        s.items.forEach(item => {
+          const product = products.find(p => p.id === item.id);
+          if (product && categories[product.category]) {
+            categories[product.category].sales += item.price * item.quantity;
+          }
+        });
+      });
+
+      // Chart (ทำลายกราฟเดิมก่อน ไม่งั้นสลับรายงานไปมาแล้วกราฟซ้อนกัน)
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      if (categoryChart) categoryChart.destroy();
+      categoryChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(categories),
+          datasets: [{
+            label: 'มูลค่าสต็อก',
+            data: Object.values(categories).map(c => c.stockValue),
+            backgroundColor: '#2c3e50'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      // Table
+      let html = '';
+      Object.entries(categories).forEach(([cat, data]) => {
+        html += `
+          <tr>
+            <td>${cat}</td>
+            <td class="text-right">${data.count}</td>
+            <td class="text-right">${formatCurrency(data.stockValue)}</td>
+            <td class="text-right">${formatCurrency(data.sales)}</td>
+          </tr>
+        `;
+      });
+      document.getElementById('categoryBody').innerHTML = html;
+    }
+
+    function exportReport() {
+      const reportType = document.getElementById('reportType').value;
+      const data = [];
+
+      if (reportType === 'sales') {
+        sales.forEach(s => {
+          data.push({
+            'วันที่': formatDate(s.date),
+            'จำนวนรายการ': s.items.length,
+            'ยอดขาย': s.total
+          });
+        });
+      } else if (reportType === 'stock') {
+        products.forEach(p => {
+          data.push({
+            'ชื่อสินค้า': p.name,
+            'จำนวน': p.quantity,
+            'ราคาทุน': p.cost,
+            'มูลค่า': p.cost * p.quantity
+          });
+        });
+      }
+
+      if (data.length > 0) {
+        exportToCSV(data, 'report_' + new Date().toISOString().split('T')[0] + '.csv');
+      }
+    }
+
+    function printReport() {
+      window.print();
+    }
+
+    // Load initial report
+    changeReport();
+  </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.Spotlight-V100
+.Trashes
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Dependencies (เฉพาะถ้ามีใช้ npm)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build files
+dist/
+build/
+*.min.js
+*.min.css
+
+# Cache
+.cache/
+temp/
+tmp/
+
+# Database backups
+*.sql
+!schema.sql
+*.bak
+
+# Sensitive files
+config.local.js
+.env.production
+secrets.json
+
+# Upload folder (หากเก็บรูปในเครื่อง)
+/images/uploads/
+/uploads/

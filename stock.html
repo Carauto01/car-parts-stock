@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการสต็อก - ระบบสต็อก</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>📦 จัดการสต็อก</h1>
+    <div class="user-info">
+      <span id="userDisplay">ผู้ใช้</span>
+      <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <h2>🚗 ศูนย์แต่งรถ</h2>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="dashboard.html">📊 แดชบอร์ด</a></li>
+        <li><a href="stock.html" class="active">📦 จัดการสต็อก</a></li>
+        <li><a href="sales.html">🛒 การขาย</a></li>
+        <li><a href="reports.html">📋 รายงาน</a></li>
+        <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้งาน</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <!-- Action Buttons -->
+      <div class="card">
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="openAddModal()">➕ เพิ่มสินค้าใหม่</button>
+          <button class="btn btn-success" onclick="importExcel()">📥 Import Excel</button>
+          <button class="btn btn-warning" onclick="exportStock()">📥 Export Stock</button>
+          <input type="text" id="searchBox" placeholder="🔍 ค้นหาสินค้า..." 
+            style="padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 250px;">
+        </div>
+      </div>
+
+      <!-- Products Table -->
+      <div class="card">
+        <table class="table" id="stockTable">
+          <thead>
+            <tr>
+              <th style="width: 50px;">รูป</th>
+              <th>ชื่อสินค้า</th>
+              <th>ประเภท</th>
+              <th class="text-right">ราคาทุน</th>
+              <th class="text-right">ราคาขาย</th>
+              <th class="text-right">กำไร %</th>
+              <th class="text-right">สต็อก</th>
+              <th class="text-center">สถานะ</th>
+              <th class="text-center">ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="stockBody">
+            <tr><td colspan="9" style="text-align: center; padding: 40px;">ข้อมูลกำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Add/Edit Product -->
+  <div id="productModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">เพิ่มสินค้าใหม่</h2>
+        <span class="modal-close" onclick="closeProductModal()">&times;</span>
+      </div>
+
+      <form id="productForm">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label for="productName">ชื่อสินค้า *</label>
+            <input type="text" id="productName" required>
+          </div>
+
+          <div class="form-group">
+            <label for="category">ประเภท *</label>
+            <select id="category" required>
+              <option value="">-- เลือกประเภท --</option>
+              <option value="สเปอร์">สเปอร์</option>
+              <option value="แบมเปอร์">แบมเปอร์</option>
+              <option value="ไฟ">ไฟ</option>
+              <option value="ท่อ">ท่อ</option>
+              <option value="ภายใน">ภายใน</option>
+              <option value="อื่น ๆ">อื่น ๆ</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="costPrice">ราคาทุน (บาท) *</label>
+            <input type="number" id="costPrice" step="0.01" required>
+          </div>
+
+          <div class="form-group">
+            <label for="sellPrice">ราคาขาย (บาท) *</label>
+            <input type="number" id="sellPrice" step="0.01" required onchange="calculateProfit()">
+          </div>
+
+          <div class="form-group">
+            <label for="profitPercent">กำไร % (อัตโนมัติ)</label>
+            <input type="number" id="profitPercent" readonly style="background-color: #f5f5f5;">
+          </div>
+
+          <div class="form-group">
+            <label for="quantity">จำนวนเริ่มต้น *</label>
+            <input type="number" id="quantity" value="0" required>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="productImage">รูปสินค้า</label>
+            <div class="image-upload" onclick="document.getElementById('imageInput').click()">
+              <p>📸 คลิกเพื่ออัพโหลดรูป</p>
+              <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
+            </div>
+            <img id="imagePreview" class="image-preview" style="display: none;">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">💾 บันทึก</button>
+          <button type="button" class="btn btn-secondary" onclick="closeProductModal()" style="flex: 1;">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!getLocalUser()) {
+      window.location.href = 'index.html';
+    }
+
+    const user = getLocalUser();
+    document.getElementById('userDisplay').textContent = `สวัสดี, ${user.name}`;
+
+    if (user.role === 'admin') {
+      document.getElementById('usersMenu').style.display = 'block';
+    }
+
+    // ข้อมูลสินค้าจาก store (ใช้ร่วมกับหน้าขาย/รายงาน)
+    let products = getProducts();
+
+    let editingId = null;
+
+    function loadProducts() {
+      const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+      const filtered = products.filter(p => 
+        p.name.toLowerCase().includes(searchTerm) || 
+        p.category.toLowerCase().includes(searchTerm)
+      );
+
+      let html = '';
+      filtered.forEach(product => {
+        const profit = ((product.price - product.cost) / product.cost * 100).toFixed(1);
+        const status = product.quantity < 5 ? '<span class="badge badge-danger">ต่ำ</span>' : 
+                      product.quantity < 10 ? '<span class="badge badge-warning">ปานกลาง</span>' :
+                      '<span class="badge badge-success">พอดี</span>';
+
+        html += `
+          <tr>
+            <td style="text-align: center;">
+              ${product.image ? `<img src="${product.image}" style="width: 40px; height: 40px; border-radius: 5px;">` : '📦'}
+            </td>
+            <td>${product.name}</td>
+            <td>${product.category}</td>
+            <td class="text-right">${formatCurrency(product.cost)}</td>
+            <td class="text-right">${formatCurrency(product.price)}</td>
+            <td class="text-right"><strong>${profit}%</strong></td>
+            <td class="text-right"><strong>${product.quantity}</strong></td>
+            <td class="text-center">${status}</td>
+            <td class="text-center">
+              <button class="btn btn-primary btn-small" onclick="editProduct(${product.id})">✏️ แก้ไข</button>
+              <button class="btn btn-danger btn-small" onclick="deleteProduct(${product.id})">🗑️ ลบ</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('stockBody').innerHTML = html || '<tr><td colspan="9" style="text-align: center;">ไม่พบข้อมูล</td></tr>';
+    }
+
+    function openAddModal() {
+      editingId = null;
+      document.getElementById('modalTitle').textContent = 'เพิ่มสินค้าใหม่';
+      document.getElementById('productForm').reset();
+      document.getElementById('imagePreview').style.display = 'none';
+      document.getElementById('productModal').style.display = 'block';
+    }
+
+    function editProduct(id) {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+
+      editingId = id;
+      document.getElementById('modalTitle').textContent = 'แก้ไขสินค้า';
+      document.getElementById('productName').value = product.name;
+      document.getElementById('category').value = product.category;
+      document.getElementById('costPrice').value = product.cost;
+      document.getElementById('sellPrice').value = product.price;
+      document.getElementById('quantity').value = product.quantity;
+      
+      if (product.image) {
+        document.getElementById('imagePreview').src = product.image;
+        document.getElementById('imagePreview').style.display = 'block';
+      }
+
+      calculateProfit();
+      document.getElementById('productModal').style.display = 'block';
+    }
+
+    function closeProductModal() {
+      document.getElementById('productModal').style.display = 'none';
+      editingId = null;
+    }
+
+    function calculateProfit() {
+      const cost = parseFloat(document.getElementById('costPrice').value) || 0;
+      const price = parseFloat(document.getElementById('sellPrice').value) || 0;
+      const profit = cost > 0 ? ((price - cost) / cost * 100).toFixed(1) : 0;
+      document.getElementById('profitPercent').value = profit;
+    }
+
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById('imagePreview').src = e.target.result;
+          document.getElementById('imagePreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    document.getElementById('productForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const formData = {
+        name: document.getElementById('productName').value,
+        category: document.getElementById('category').value,
+        cost: parseFloat(document.getElementById('costPrice').value),
+        price: parseFloat(document.getElementById('sellPrice').value),
+        quantity: parseInt(document.getElementById('quantity').value),
+        image: document.getElementById('imagePreview').src || ''
+      };
+
+      if (editingId) {
+        const product = products.find(p => p.id === editingId);
+        if (product) {
+          Object.assign(product, formData);
+          showNotification('แก้ไขสินค้าสำเร็จ', 'success');
+        }
+      } else {
+        products.push({ id: nextId(products), ...formData });
+        showNotification('เพิ่มสินค้าใหม่สำเร็จ', 'success');
+      }
+
+      saveProducts(products);
+      closeProductModal();
+      loadProducts();
+    });
+
+    function deleteProduct(id) {
+      if (confirm('ต้องการลบสินค้านี้หรือไม่?')) {
+        products = products.filter(p => p.id !== id);
+        saveProducts(products);
+        showNotification('ลบสินค้าสำเร็จ', 'success');
+        loadProducts();
+      }
+    }
+
+    function exportStock() {
+      exportToCSV(products, 'stock_' + new Date().toISOString().split('T')[0] + '.csv');
+    }
+
+    function importExcel() {
+      showNotification('📁 ตัวนี้ยังอยู่ระหว่างพัฒนา', 'info');
+    }
+
+    document.getElementById('searchBox').addEventListener('input', loadProducts);
+
+    loadProducts();
+  </script>
+</body>
+</html>

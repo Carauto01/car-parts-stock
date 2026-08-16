@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ผู้ใช้งาน - ระบบสต็อก</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>👤 ผู้ใช้งาน</h1>
+    <div class="user-info">
+      <span id="userDisplay">ผู้ใช้</span>
+      <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <h2>🚗 ศูนย์แต่งรถ</h2>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="dashboard.html">📊 แดชบอร์ด</a></li>
+        <li><a href="stock.html">📦 จัดการสต็อก</a></li>
+        <li><a href="sales.html">🛒 การขาย</a></li>
+        <li><a href="reports.html">📋 รายงาน</a></li>
+        <li id="usersMenu" style="display: none;"><a href="users.html" class="active">👤 ผู้ใช้งาน</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <!-- Action Buttons -->
+      <div class="card">
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="openAddUserModal()">➕ เพิ่มผู้ใช้ใหม่</button>
+          <button class="btn btn-warning" onclick="resetPasswords()">🔐 รีเซ็ตรหัสผ่านทั้งหมด</button>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="card">
+        <h2>รายชื่อผู้ใช้งาน</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ชื่อผู้ใช้</th>
+              <th>ชื่อจริง</th>
+              <th>ตำแหน่ง</th>
+              <th>เบอร์โทร</th>
+              <th class="text-center">สถานะ</th>
+              <th class="text-center">ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody">
+            <tr><td colspan="6" style="text-align: center;">ข้อมูลกำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Add/Edit User -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">เพิ่มผู้ใช้ใหม่</h2>
+        <span class="modal-close" onclick="closeUserModal()">&times;</span>
+      </div>
+
+      <form id="userForm">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label for="username">ชื่อผู้ใช้ *</label>
+            <input type="text" id="username" required>
+          </div>
+
+          <div class="form-group">
+            <label for="fullName">ชื่อจริง *</label>
+            <input type="text" id="fullName" required>
+          </div>
+
+          <div class="form-group">
+            <label for="password">รหัสผ่าน *</label>
+            <input type="password" id="password" required placeholder="กรุณาป้อนรหัสผ่าน">
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">ยืนยันรหัสผ่าน *</label>
+            <input type="password" id="confirmPassword" required placeholder="ยืนยันรหัสผ่าน">
+          </div>
+
+          <div class="form-group">
+            <label for="role">ตำแหน่ง *</label>
+            <select id="role" required>
+              <option value="">-- เลือกตำแหน่ง --</option>
+              <option value="admin">👑 ผู้ดูแลระบบ</option>
+              <option value="manager">📊 ผู้จัดการ</option>
+              <option value="staff">📦 พนักงาน</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="phone">เบอร์โทร</label>
+            <input type="tel" id="phone" placeholder="ไม่บังคับ">
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="permissions">สิทธิการใช้งาน</label>
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
+              <div style="margin-bottom: 10px;">
+                <input type="checkbox" id="canViewDashboard" checked disabled>
+                <label for="canViewDashboard" style="display: inline; margin-left: 5px;">📊 ดูแดชบอร์ด (ทั้งหมด)</label>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <input type="checkbox" id="canManageStock">
+                <label for="canManageStock" style="display: inline; margin-left: 5px;">📦 จัดการสต็อก</label>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <input type="checkbox" id="canSales">
+                <label for="canSales" style="display: inline; margin-left: 5px;">🛒 ทำการขาย</label>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <input type="checkbox" id="canViewReports">
+                <label for="canViewReports" style="display: inline; margin-left: 5px;">📋 ดูรายงาน</label>
+              </div>
+              <div>
+                <input type="checkbox" id="canManageUsers">
+                <label for="canManageUsers" style="display: inline; margin-left: 5px;">👤 จัดการผู้ใช้งาน</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">💾 บันทึก</button>
+          <button type="button" class="btn btn-secondary" onclick="closeUserModal()" style="flex: 1;">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Change Password -->
+  <div id="passwordModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>เปลี่ยนรหัสผ่าน</h2>
+        <span class="modal-close" onclick="closePasswordModal()">&times;</span>
+      </div>
+
+      <form id="passwordForm">
+        <div class="form-group">
+          <label for="newPassword">รหัสผ่านใหม่ *</label>
+          <input type="password" id="newPassword" required>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmNewPassword">ยืนยันรหัสผ่านใหม่ *</label>
+          <input type="password" id="confirmNewPassword" required>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">บันทึก</button>
+          <button type="button" class="btn btn-secondary" onclick="closePasswordModal()" style="flex: 1;">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // ตรวจสอบ auth และ admin only
+    if (!getLocalUser()) {
+      window.location.href = 'index.html';
+    }
+
+    const user = getLocalUser();
+    if (user.role !== 'admin') {
+      showNotification('⛔ เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถเข้าหน้านี้ได้', 'error');
+      setTimeout(() => window.location.href = 'dashboard.html', 2000);
+    }
+
+    document.getElementById('userDisplay').textContent = `สวัสดี, ${user.name}`;
+    document.getElementById('usersMenu').style.display = 'block';
+
+    // ผู้ใช้งานจาก store (ใช้จริงตอน login)
+    let users = getUsers();
+
+    let editingUserId = null;
+
+    function loadUsers() {
+      let html = '';
+      users.forEach(u => {
+        const statusBadge = u.status === 'active' 
+          ? '<span class="badge badge-success">✅ ใช้งาน</span>'
+          : '<span class="badge badge-danger">🚫 ปิดใช้</span>';
+
+        const roleLabel = u.role === 'admin' ? '👑 ผู้ดูแลระบบ' :
+                        u.role === 'manager' ? '📊 ผู้จัดการ' : '📦 พนักงาน';
+
+        html += `
+          <tr>
+            <td><strong>${u.username}</strong></td>
+            <td>${u.name}</td>
+            <td>${roleLabel}</td>
+            <td>${u.phone}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="text-center">
+              <button class="btn btn-primary btn-small" onclick="editUser(${u.id})">✏️ แก้ไข</button>
+              <button class="btn btn-warning btn-small" onclick="changePassword(${u.id})">🔐 รหัสผ่าน</button>
+              <button class="btn btn-danger btn-small" onclick="deleteUser(${u.id})">🗑️ ลบ</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('usersBody').innerHTML = html || '<tr><td colspan="6" style="text-align: center;">ไม่มีผู้ใช้งาน</td></tr>';
+    }
+
+    function openAddUserModal() {
+      editingUserId = null;
+      document.getElementById('modalTitle').textContent = 'เพิ่มผู้ใช้ใหม่';
+      document.getElementById('userForm').reset();
+      document.getElementById('userModal').style.display = 'block';
+    }
+
+    function editUser(id) {
+      const u = users.find(x => x.id === id);
+      if (!u) return;
+
+      editingUserId = id;
+      document.getElementById('modalTitle').textContent = 'แก้ไขผู้ใช้';
+      document.getElementById('username').value = u.username;
+      document.getElementById('fullName').value = u.name;
+      document.getElementById('role').value = u.role;
+      document.getElementById('phone').value = u.phone;
+
+      // Set permissions
+      document.getElementById('canManageStock').checked = u.permissions.includes('stock');
+      document.getElementById('canSales').checked = u.permissions.includes('sales');
+      document.getElementById('canViewReports').checked = u.permissions.includes('reports');
+      document.getElementById('canManageUsers').checked = u.permissions.includes('users');
+
+      document.getElementById('userModal').style.display = 'block';
+    }
+
+    function closeUserModal() {
+      document.getElementById('userModal').style.display = 'none';
+      editingUserId = null;
+    }
+
+    function closePasswordModal() {
+      document.getElementById('passwordModal').style.display = 'none';
+    }
+
+    document.getElementById('userForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (password !== confirmPassword && document.getElementById('password').value !== '') {
+        showNotification('⚠️ รหัสผ่านไม่ตรงกัน', 'warning');
+        return;
+      }
+
+      const userData = {
+        username: document.getElementById('username').value,
+        name: document.getElementById('fullName').value,
+        role: document.getElementById('role').value,
+        phone: document.getElementById('phone').value,
+        status: 'active',
+        permissions: [
+          'dashboard',
+          document.getElementById('canManageStock').checked ? 'stock' : null,
+          document.getElementById('canSales').checked ? 'sales' : null,
+          document.getElementById('canViewReports').checked ? 'reports' : null,
+          document.getElementById('canManageUsers').checked ? 'users' : null
+        ].filter(Boolean)
+      };
+
+      if (editingUserId) {
+        const u = users.find(x => x.id === editingUserId);
+        if (u) {
+          Object.assign(u, userData);
+          if (password) u.password = password;
+          showNotification('แก้ไขผู้ใช้สำเร็จ', 'success');
+        }
+      } else {
+        if (!password) {
+          showNotification('⚠️ กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่', 'warning');
+          return;
+        }
+        if (users.some(x => x.username === userData.username)) {
+          showNotification('⚠️ ชื่อผู้ใช้นี้มีอยู่แล้ว', 'warning');
+          return;
+        }
+        users.push({ id: nextId(users), password: password, ...userData });
+        showNotification('เพิ่มผู้ใช้ใหม่สำเร็จ', 'success');
+      }
+
+      saveUsers(users);
+      closeUserModal();
+      loadUsers();
+    });
+
+    let changingPasswordUserId = null;
+
+    function changePassword(userId) {
+      changingPasswordUserId = userId;
+      document.getElementById('passwordForm').reset();
+      document.getElementById('passwordModal').style.display = 'block';
+    }
+
+    document.getElementById('passwordForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const newPass = document.getElementById('newPassword').value;
+      const confirmPass = document.getElementById('confirmNewPassword').value;
+
+      if (newPass !== confirmPass) {
+        showNotification('⚠️ รหัสผ่านไม่ตรงกัน', 'warning');
+        return;
+      }
+
+      const u = users.find(x => x.id === changingPasswordUserId);
+      if (u) {
+        u.password = newPass;
+        saveUsers(users);
+        showNotification('✅ เปลี่ยนรหัสผ่านสำเร็จ', 'success');
+        closePasswordModal();
+      }
+    });
+
+    function deleteUser(id) {
+      if (id === 1 && users.find(u => u.id === 1).username === 'admin') {
+        showNotification('⛔ ไม่สามารถลบผู้ดูแลระบบได้', 'error');
+        return;
+      }
+
+      if (confirm('ต้องการลบผู้ใช้นี้หรือไม่?')) {
+        users = users.filter(u => u.id !== id);
+        saveUsers(users);
+        showNotification('ลบผู้ใช้สำเร็จ', 'success');
+        loadUsers();
+      }
+    }
+
+    function resetPasswords() {
+      if (confirm('ต้องการรีเซ็ตรหัสผ่านทั้งหมดเป็น "password123" หรือไม่?')) {
+        users.forEach(u => u.password = 'password123');
+        saveUsers(users);
+        showNotification('✅ รีเซ็ตรหัสผ่านสำเร็จ', 'success');
+      }
+    }
+
+    loadUsers();
+  </script>
+</body>
+</html>
