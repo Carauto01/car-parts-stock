@@ -14,6 +14,7 @@
     <h1>📋 รายงาน<span class="page-sub">Reports</span></h1>
     <div class="user-info">
       <span id="userDisplay">ผู้ใช้</span>
+      <button class="icon-btn" data-theme-toggle onclick="toggleTheme()">☀️</button>
       <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
     </div>
   </div>
@@ -61,10 +62,14 @@
             </select>
           </div>
 
-          <div class="btn-group" style="align-self: flex-end;">
-            <button class="btn btn-success" onclick="exportReport()">📥 Export</button>
-            <button class="btn btn-info" onclick="printReport()">🖨️ Print</button>
-          </div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search"></div>
+        <div class="toolbar-actions">
+          <button class="btn btn-secondary" onclick="exportReport()">📥 Export CSV</button>
+          <button class="btn btn-secondary" onclick="printPage()">🖨️ พิมพ์รายงาน</button>
         </div>
       </div>
 
@@ -180,6 +185,11 @@
     const sales = getSales();
 
     let categoryChart = null;
+
+    // เรียกโดย toggleTheme() ใน app.js — วาดกราฟใหม่ด้วยสีของโหมดใหม่
+    function onThemeChange() {
+      updateReport();
+    }
 
     function changeReport() {
       const reportType = document.getElementById('reportType').value;
@@ -385,10 +395,6 @@
       if (data.length > 0) {
         exportToCSV(data, 'report_' + new Date().toISOString().split('T')[0] + '.csv');
       }
-    }
-
-    function printReport() {
-      window.print();
     }
 
     // Load initial report

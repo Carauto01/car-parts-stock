@@ -13,6 +13,7 @@
     <h1>📦 จัดการสต็อก<span class="page-sub">Stock</span></h1>
     <div class="user-info">
       <span id="userDisplay">ผู้ใช้</span>
+      <button class="icon-btn" data-theme-toggle onclick="toggleTheme()">☀️</button>
       <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
     </div>
   </div>
@@ -36,14 +37,15 @@
   <!-- Main Content -->
   <div class="main-content">
     <div class="container">
-      <!-- Action Buttons -->
-      <div class="card">
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="openAddModal()">➕ เพิ่มสินค้าใหม่</button>
-          <button class="btn btn-success" onclick="importExcel()">📥 Import Excel</button>
-          <button class="btn btn-warning" onclick="exportStock()">📥 Export Stock</button>
-          <input type="text" id="searchBox" placeholder="🔍 ค้นหาสินค้า..." 
-            style="padding: 10px; border: 1px solid var(--border); border-radius: 5px; width: 250px;">
+      <!-- แถบเครื่องมือ: ค้นหายืดเต็ม ปุ่มชิดขวา ปุ่มหลักอยู่ขวาสุด -->
+      <div class="toolbar">
+        <div class="search">
+          <input type="text" id="searchBox" placeholder="🔍 ค้นหาสินค้า หรือประเภท...">
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn btn-secondary" onclick="importExcel()">📥 นำเข้า</button>
+          <button class="btn btn-secondary" onclick="exportStock()">📤 ส่งออก</button>
+          <button class="btn btn-primary" onclick="openAddModal()">➕ เพิ่มสินค้า</button>
         </div>
       </div>
 
@@ -129,9 +131,9 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button type="submit" class="btn btn-primary" style="flex: 1;">💾 บันทึก</button>
-          <button type="button" class="btn btn-secondary" onclick="closeProductModal()" style="flex: 1;">ยกเลิก</button>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeProductModal()">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">💾 บันทึก</button>
         </div>
       </form>
     </div>
@@ -184,8 +186,10 @@
             <td class="text-right"><strong>${product.quantity}</strong></td>
             <td class="text-center">${status}</td>
             <td class="text-center">
-              <button class="btn btn-primary btn-small" onclick="editProduct(${product.id})">✏️ แก้ไข</button>
-              <button class="btn btn-danger btn-small" onclick="deleteProduct(${product.id})">🗑️ ลบ</button>
+              <div class="table-actions">
+                <button class="btn-icon primary" onclick="editProduct(${product.id})" title="แก้ไข" aria-label="แก้ไข">✏️</button>
+                <button class="btn-icon danger" onclick="deleteProduct(${product.id})" title="ลบ" aria-label="ลบ">🗑️</button>
+              </div>
             </td>
           </tr>
         `;

@@ -67,9 +67,68 @@
   --text-color: var(--text);
 }
 
+/* --------------------------------------------------------------------------
+   โหมดสว่าง — ใช้เมื่อผู้ใช้กดสลับเท่านั้น (ค่าเริ่มต้นของระบบคือโหมดมืด)
+   -------------------------------------------------------------------------- */
+:root[data-theme='light'] {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f1f2f4;
+  --surface-3: #e4e6ea;
+  --border: #e0e2e7;
+  --border-soft: rgba(15, 23, 42, 0.09);
+
+  --text: #14161a;
+  --text-muted: #5b616e;
+  --text-faint: #8b909c;
+
+  --primary-soft: rgba(225, 29, 47, 0.09);
+  --primary-ring: rgba(225, 29, 47, 0.16);
+
+  --success: #15803d;
+  --success-soft: rgba(21, 128, 61, 0.1);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.1);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.09);
+  --info: #0369a1;
+  --info-soft: rgba(3, 105, 161, 0.1);
+
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.09);
+  --shadow-lg: 0 18px 44px rgba(15, 23, 42, 0.16);
+
+  color-scheme: light;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   color-scheme: dark;
+}
+
+/* หัวเว็บและแถบเมนูโปร่งแสง ต้องเปลี่ยนพื้นตามโหมดด้วย */
+:root[data-theme='light'] .header {
+  background-color: rgba(255, 255, 255, 0.88);
+}
+
+:root[data-theme='light'] .sidebar {
+  background-color: var(--surface);
+}
+
+@media (max-width: 900px) {
+  :root[data-theme='light'] .sidebar {
+    background-color: rgba(255, 255, 255, 0.96);
+  }
+}
+
+:root[data-theme='light'] .modal {
+  background-color: rgba(15, 23, 42, 0.45);
+}
+
+:root[data-theme='light'] .login-container {
+  background:
+    radial-gradient(900px 500px at 50% -10%, rgba(225, 29, 47, 0.12), transparent 70%),
+    var(--bg);
 }
 
 body {
@@ -472,6 +531,124 @@ input[type='checkbox'] {
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+/* ปุ่มไอคอนกลม เช่น สลับโหมดมืด/สว่าง */
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background-color: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.icon-btn:hover {
+  background-color: var(--surface-2);
+  color: var(--text);
+  border-color: var(--surface-3);
+}
+
+/* --------------------------------------------------------------------------
+   แถบเครื่องมือประจำหน้า: ช่องค้นหายืดเต็ม ปุ่มชิดขวา
+   -------------------------------------------------------------------------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.toolbar .search {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.toolbar .search input {
+  width: 100%;
+}
+
+.toolbar .toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   ปุ่มในแถวตาราง: ไอคอนล้วน ประหยัดที่ อ่านตัวเลขได้เต็มตา
+   -------------------------------------------------------------------------- */
+.table-actions {
+  display: inline-flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background-color: transparent;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-icon:hover {
+  background-color: var(--surface-2);
+}
+
+.btn-icon.danger:hover {
+  background-color: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.btn-icon.primary:hover {
+  background-color: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+/* --------------------------------------------------------------------------
+   ปุ่มท้าย modal: ยกเลิกซ้าย บันทึกขวา (ปุ่มหลักอยู่ขวาเสมอ)
+   -------------------------------------------------------------------------- */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.modal-actions .btn {
+  min-width: 110px;
+}
+
+/* --------------------------------------------------------------------------
+   แถบปุ่มหลักของหน้า (เช่น ออกใบเสร็จ) — จอเล็กจะหนึบอยู่ล่างจอ
+   -------------------------------------------------------------------------- */
+.action-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-bar .btn {
+  width: 100%;
 }
 
 /* ==========================================================================
@@ -884,6 +1061,12 @@ input[type='checkbox'] {
     padding: 16px;
   }
 
+  /* กันคอลัมน์ถูกบีบจนชื่อสินค้าแตกเป็นบรรทัดย่อย — ให้ปัดดูแนวนอนแทน */
+  .card > .table td,
+  .card > .table th {
+    white-space: nowrap;
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
@@ -917,6 +1100,30 @@ input[type='checkbox'] {
   .modal-content {
     margin: 2vh auto;
     padding: 18px;
+  }
+
+  /* ปุ่มท้าย modal บนมือถือ: เรียงลงมา ปุ่มหลักอยู่บน กดง่ายด้วยนิ้วโป้ง */
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+  }
+
+  /* แถบเครื่องมือ: ช่องค้นหาเต็มบรรทัด ปุ่มเลื่อนแนวนอนได้ */
+  .toolbar .search {
+    flex: 1 1 100%;
+  }
+
+  .toolbar .toolbar-actions {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .toolbar .toolbar-actions .btn {
+    flex: 1 0 auto;
   }
 
   .notification {

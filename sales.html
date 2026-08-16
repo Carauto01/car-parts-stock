@@ -13,6 +13,7 @@
     <h1>🛒 การขาย<span class="page-sub">Sales</span></h1>
     <div class="user-info">
       <span id="userDisplay">ผู้ใช้</span>
+      <button class="icon-btn" data-theme-toggle onclick="toggleTheme()">☀️</button>
       <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
     </div>
   </div>
@@ -101,10 +102,12 @@
             <input type="text" id="customerName" placeholder="ไม่บังคับ">
           </div>
 
-          <div class="btn-group" style="flex-direction: column;">
+          <div class="action-bar">
             <button class="btn btn-primary" onclick="generateReceipt()">🧾 ออกใบเสร็จ</button>
-            <button class="btn btn-warning" onclick="generatePO()">📋 ออกใบสั่งซื้อ</button>
-            <button class="btn btn-secondary" onclick="clearCart()">🗑️ ล้างรายการ</button>
+            <div class="btn-group" style="gap: 8px;">
+              <button class="btn btn-secondary" style="flex: 1;" onclick="generatePO()">📋 ใบสั่งซื้อ</button>
+              <button class="btn btn-secondary" style="flex: 1;" onclick="clearCart()">🗑️ ล้างรายการ</button>
+            </div>
           </div>
         </div>
       </div>
@@ -123,10 +126,10 @@
         <!-- ใบเสร็จจะแสดงที่นี่ -->
       </div>
 
-      <div style="margin-top: 20px; display: flex; gap: 10px;">
-        <button class="btn btn-success" style="flex: 1;" onclick="printReceipt()">🖨️ พิมพ์</button>
-        <button class="btn btn-info" style="flex: 1;" onclick="downloadReceipt()">💾 ดาวน์โหลด QR</button>
-        <button class="btn btn-secondary" style="flex: 1;" onclick="closeModal('receiptModal')">ปิด</button>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('receiptModal')">ปิด</button>
+        <button class="btn btn-secondary" onclick="downloadReceipt()">💾 ดาวน์โหลด QR</button>
+        <button class="btn btn-primary" onclick="printReceipt()">🖨️ พิมพ์ใบเสร็จ</button>
       </div>
     </div>
   </div>

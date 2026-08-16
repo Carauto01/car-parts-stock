@@ -13,6 +13,7 @@
     <h1>👤 ผู้ใช้งาน<span class="page-sub">Users</span></h1>
     <div class="user-info">
       <span id="userDisplay">ผู้ใช้</span>
+      <button class="icon-btn" data-theme-toggle onclick="toggleTheme()">☀️</button>
       <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
     </div>
   </div>
@@ -36,11 +37,11 @@
   <!-- Main Content -->
   <div class="main-content">
     <div class="container">
-      <!-- Action Buttons -->
-      <div class="card">
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="openAddUserModal()">➕ เพิ่มผู้ใช้ใหม่</button>
-          <button class="btn btn-warning" onclick="resetPasswords()">🔐 รีเซ็ตรหัสผ่านทั้งหมด</button>
+      <div class="toolbar">
+        <div class="search"></div>
+        <div class="toolbar-actions">
+          <button class="btn btn-secondary" onclick="resetPasswords()">🔐 รีเซ็ตรหัสผ่านทั้งหมด</button>
+          <button class="btn btn-primary" onclick="openAddUserModal()">➕ เพิ่มผู้ใช้</button>
         </div>
       </div>
 
@@ -138,9 +139,9 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button type="submit" class="btn btn-primary" style="flex: 1;">💾 บันทึก</button>
-          <button type="button" class="btn btn-secondary" onclick="closeUserModal()" style="flex: 1;">ยกเลิก</button>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeUserModal()">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">💾 บันทึก</button>
         </div>
       </form>
     </div>
@@ -165,9 +166,9 @@
           <input type="password" id="confirmNewPassword" required>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-          <button type="submit" class="btn btn-primary" style="flex: 1;">บันทึก</button>
-          <button type="button" class="btn btn-secondary" onclick="closePasswordModal()" style="flex: 1;">ยกเลิก</button>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึก</button>
         </div>
       </form>
     </div>
@@ -214,9 +215,11 @@
             <td>${u.phone}</td>
             <td class="text-center">${statusBadge}</td>
             <td class="text-center">
-              <button class="btn btn-primary btn-small" onclick="editUser(${u.id})">✏️ แก้ไข</button>
-              <button class="btn btn-warning btn-small" onclick="changePassword(${u.id})">🔐 รหัสผ่าน</button>
-              <button class="btn btn-danger btn-small" onclick="deleteUser(${u.id})">🗑️ ลบ</button>
+              <div class="table-actions">
+                <button class="btn-icon primary" onclick="editUser(${u.id})" title="แก้ไข" aria-label="แก้ไข">✏️</button>
+                <button class="btn-icon" onclick="changePassword(${u.id})" title="เปลี่ยนรหัสผ่าน" aria-label="เปลี่ยนรหัสผ่าน">🔐</button>
+                <button class="btn-icon danger" onclick="deleteUser(${u.id})" title="ลบ" aria-label="ลบ">🗑️</button>
+              </div>
             </td>
           </tr>
         `;

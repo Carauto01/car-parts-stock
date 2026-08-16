@@ -14,6 +14,7 @@
     <h1>📊 แดชบอร์ด<span class="page-sub">Dashboard</span></h1>
     <div class="user-info">
       <span id="userDisplay">ผู้ใช้</span>
+      <button class="icon-btn" data-theme-toggle onclick="toggleTheme()">☀️</button>
       <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
     </div>
   </div>
@@ -37,6 +38,14 @@
   <!-- Main Content -->
   <div class="main-content">
     <div class="container">
+      <div class="toolbar">
+        <div class="search"></div>
+        <div class="toolbar-actions">
+          <button class="btn btn-secondary" onclick="exportDashboard()">📊 Export รายงาน</button>
+          <button class="btn btn-secondary" onclick="printPage()">🖨️ พิมพ์</button>
+        </div>
+      </div>
+
       <!-- Stats Grid -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -95,14 +104,6 @@
         </div>
       </div>
 
-      <!-- Export Options -->
-      <div class="card" style="margin-top: 20px;">
-        <h2>💾 ส่วนการดาวน์โหลด</h2>
-        <div class="btn-group">
-          <button class="btn btn-success" onclick="exportDashboard()">📊 Export รายงาน</button>
-          <button class="btn btn-info" onclick="printDashboard()">🖨️ พิมพ์แดชบอร์ด</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -128,6 +129,15 @@
       products: getProducts(),
       sales: getSales()
     };
+
+    // เก็บอ็อบเจกต์กราฟไว้ เพื่อวาดใหม่ตอนสลับโหมดมืด/สว่าง
+    let salesChartObj = null;
+    let topChartObj = null;
+
+    // เรียกโดย toggleTheme() ใน app.js
+    function onThemeChange() {
+      loadDashboard();
+    }
 
     // Load Dashboard
     async function loadDashboard() {
@@ -158,8 +168,9 @@
         });
       }
 
-      const ctx1 = document.getElementById('salesChart').getContext('2d');
-      new Chart(ctx1, {
+      const ctx1 = document.getElementById("salesChart").getContext("2d");
+      if (salesChartObj) salesChartObj.destroy();
+      salesChartObj = new Chart(ctx1, {
         type: 'line',
         data: {
           labels: last7Days.map(d => d.date),
@@ -173,7 +184,7 @@
             fill: true,
             pointRadius: 4,
             pointHoverRadius: 6,
-            pointBackgroundColor: CHART_SURFACE,
+            pointBackgroundColor: chartSurface(),
             pointBorderColor: CHART_COLOR,
             pointBorderWidth: 2
           }]
@@ -201,8 +212,9 @@
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
 
-      const ctx2 = document.getElementById('topProductsChart').getContext('2d');
-      new Chart(ctx2, {
+      const ctx2 = document.getElementById("topProductsChart").getContext("2d");
+      if (topChartObj) topChartObj.destroy();
+      topChartObj = new Chart(ctx2, {
         type: 'bar',
         data: {
           labels: topProducts.map(([name]) => name.length > 14 ? name.substring(0, 14) + '…' : name),
@@ -265,10 +277,6 @@
         'กำไรสะสม': demoData.sales.reduce((sum, s) => sum + saleProfit(s), 0)
       }];
       exportToCSV(data, 'dashboard_' + new Date().toISOString().split('T')[0] + '.csv');
-    }
-
-    function printDashboard() {
-      printPage('main-content', '📊 รายงานแดชบอร์ด');
     }
 
     // Load data on page load

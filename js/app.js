@@ -1,17 +1,51 @@
 // 🛠️ Utility Functions
 
-// สีและค่าเริ่มต้นของกราฟ ให้เข้าชุดกับธีมเว็บ
+// ==========================================================================
+// โหมดมืด / สว่าง
+// ==========================================================================
+
+const THEME_KEY = 'cps_theme';
 const CHART_COLOR = '#ef4444';
 const CHART_COLOR_SOFT = 'rgba(239, 68, 68, 0.16)';
-const CHART_GRID = '#2a2b30';
-const CHART_INK = '#a1a1aa';
-const CHART_SURFACE = '#161719';
+
+function getTheme() {
+  return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_KEY, theme);
+
+  document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
+    btn.textContent = theme === 'light' ? '🌙' : '☀️';
+    btn.title = theme === 'light' ? 'สลับเป็นโหมดมืด' : 'สลับเป็นโหมดสว่าง';
+    btn.setAttribute('aria-label', btn.title);
+  });
+}
+
+function toggleTheme() {
+  applyTheme(getTheme() === 'light' ? 'dark' : 'light');
+  // ให้หน้าที่มีกราฟวาดใหม่ด้วยสีของโหมดใหม่
+  if (typeof onThemeChange === 'function') onThemeChange();
+}
+
+// ตั้งธีมทันทีที่โหลด กันจอกะพริบ
+applyTheme(getTheme());
+document.addEventListener('DOMContentLoaded', () => applyTheme(getTheme()));
+
+// ==========================================================================
+// กราฟ
+// ==========================================================================
+
+// อ่านสีจากตัวแปร CSS เพื่อให้กราฟเปลี่ยนตามโหมดมืด/สว่างได้
+function cssVar(name, fallback) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+}
 
 if (typeof Chart !== 'undefined') {
   Chart.defaults.font.family = "'Inter', 'Noto Sans Thai', sans-serif";
   Chart.defaults.font.size = 12;
-  Chart.defaults.color = CHART_INK;
-  Chart.defaults.plugins.tooltip.backgroundColor = '#33343a';
   Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.plugins.tooltip.cornerRadius = 8;
   Chart.defaults.plugins.tooltip.displayColors = false;
@@ -19,17 +53,31 @@ if (typeof Chart !== 'undefined') {
 
 // แกนแบบเรียบ ๆ ไม่แย่งสายตาไปจากเส้นข้อมูล
 function chartScales({ integer = false } = {}) {
+  const grid = cssVar('--border-soft', '#2a2b30');
+  const ink = cssVar('--text-muted', '#a1a1aa');
+
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.color = ink;
+    Chart.defaults.plugins.tooltip.backgroundColor =
+      getTheme() === 'light' ? '#1f2937' : '#33343a';
+  }
+
   return {
     y: {
       beginAtZero: true,
-      grid: { color: CHART_GRID, drawBorder: false, drawTicks: false },
-      ticks: { padding: 8, precision: integer ? 0 : undefined }
+      grid: { color: grid, drawBorder: false, drawTicks: false },
+      ticks: { color: ink, padding: 8, precision: integer ? 0 : undefined }
     },
     x: {
       grid: { display: false, drawBorder: false },
-      ticks: { padding: 6 }
+      ticks: { color: ink, padding: 6 }
     }
   };
+}
+
+// สีพื้นของจุดบนกราฟเส้น (ต้องกลืนกับพื้นการ์ด)
+function chartSurface() {
+  return cssVar('--surface', '#161719');
 }
 
 // ดึง localStorage user ก่อน (ในขณะ setup)
