@@ -1,5 +1,37 @@
 // 🛠️ Utility Functions
 
+// สีและค่าเริ่มต้นของกราฟ ให้เข้าชุดกับธีมเว็บ
+const CHART_COLOR = '#ef4444';
+const CHART_COLOR_SOFT = 'rgba(239, 68, 68, 0.16)';
+const CHART_GRID = '#2a2b30';
+const CHART_INK = '#a1a1aa';
+const CHART_SURFACE = '#161719';
+
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.font.family = "'Inter', 'Noto Sans Thai', sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = CHART_INK;
+  Chart.defaults.plugins.tooltip.backgroundColor = '#33343a';
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.displayColors = false;
+}
+
+// แกนแบบเรียบ ๆ ไม่แย่งสายตาไปจากเส้นข้อมูล
+function chartScales({ integer = false } = {}) {
+  return {
+    y: {
+      beginAtZero: true,
+      grid: { color: CHART_GRID, drawBorder: false, drawTicks: false },
+      ticks: { padding: 8, precision: integer ? 0 : undefined }
+    },
+    x: {
+      grid: { display: false, drawBorder: false },
+      ticks: { padding: 6 }
+    }
+  };
+}
+
 // ดึง localStorage user ก่อน (ในขณะ setup)
 let localUser = getLocalUser();
 if (localUser) {
@@ -7,36 +39,14 @@ if (localUser) {
   userRole = localUser.role;
 }
 
-// ฟังก์ชันแสดง notification
+// ฟังก์ชันแสดง notification (หน้าตาอยู่ใน css/style.css → .notification)
 function showNotification(message, type = 'success') {
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
   notification.textContent = message;
-  
-  const style = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    border-radius: 5px;
-    color: white;
-    font-weight: 500;
-    z-index: 9999;
-    animation: slideIn 0.3s ease;
-  `;
-  
-  if (type === 'success') {
-    notification.style.cssText = style + 'background-color: #28a745;';
-  } else if (type === 'error') {
-    notification.style.cssText = style + 'background-color: #dc3545;';
-  } else if (type === 'warning') {
-    notification.style.cssText = style + 'background-color: #ffc107; color: black;';
-  } else if (type === 'info') {
-    notification.style.cssText = style + 'background-color: #17a2b8;';
-  }
-  
+
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     notification.remove();
   }, 3000);
@@ -131,21 +141,9 @@ function exportToCSV(data, filename = 'export.csv') {
   showNotification('Export สำเร็จ', 'success');
 }
 
-// ฟังก์ชัน Print
-function printPage(elementId, title) {
-  const printContents = document.getElementById(elementId).innerHTML;
-  const originalContents = document.body.innerHTML;
-  
-  document.body.innerHTML = `
-    <div style="padding: 20px;">
-      <h1>${title}</h1>
-      ${printContents}
-    </div>
-  `;
-  
+// ฟังก์ชัน Print — เมนู/ปุ่มถูกซ่อนด้วย @media print ใน style.css
+function printPage() {
   window.print();
-  document.body.innerHTML = originalContents;
-  location.reload();
 }
 
 // ฟังก์ชัน Debug Log (เปิด/ปิดด้วย localStorage.setItem('debug', '1'))
@@ -163,18 +161,3 @@ function logout() {
   }
 }
 
-// Animation CSS
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideIn {
-    from {
-      transform: translateX(400px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-`;
-document.head.appendChild(style);

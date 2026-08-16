@@ -10,7 +10,7 @@
 <body>
   <!-- Header -->
   <div class="header">
-    <h1>📦 จัดการสต็อก</h1>
+    <h1>📦 จัดการสต็อก<span class="page-sub">Stock</span></h1>
     <div class="user-info">
       <span id="userDisplay">ผู้ใช้</span>
       <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
@@ -25,10 +25,10 @@
     <nav>
       <ul>
         <li><a href="dashboard.html">📊 แดชบอร์ด</a></li>
-        <li><a href="stock.html" class="active">📦 จัดการสต็อก</a></li>
-        <li><a href="sales.html">🛒 การขาย</a></li>
+        <li><a href="stock.html" class="active">📦 สต็อก</a></li>
+        <li><a href="sales.html">🛒 ขาย</a></li>
         <li><a href="reports.html">📋 รายงาน</a></li>
-        <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้งาน</a></li>
+        <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้</a></li>
       </ul>
     </nav>
   </div>
@@ -43,7 +43,7 @@
           <button class="btn btn-success" onclick="importExcel()">📥 Import Excel</button>
           <button class="btn btn-warning" onclick="exportStock()">📥 Export Stock</button>
           <input type="text" id="searchBox" placeholder="🔍 ค้นหาสินค้า..." 
-            style="padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 250px;">
+            style="padding: 10px; border: 1px solid var(--border); border-radius: 5px; width: 250px;">
         </div>
       </div>
 
@@ -111,7 +111,7 @@
 
           <div class="form-group">
             <label for="profitPercent">กำไร % (อัตโนมัติ)</label>
-            <input type="number" id="profitPercent" readonly style="background-color: #f5f5f5;">
+            <input type="number" id="profitPercent" readonly style="background-color: var(--surface-2);">
           </div>
 
           <div class="form-group">

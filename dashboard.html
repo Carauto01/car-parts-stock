@@ -11,7 +11,7 @@
 <body>
   <!-- Header -->
   <div class="header">
-    <h1>📊 แดชบอร์ด</h1>
+    <h1>📊 แดชบอร์ด<span class="page-sub">Dashboard</span></h1>
     <div class="user-info">
       <span id="userDisplay">ผู้ใช้</span>
       <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
@@ -26,10 +26,10 @@
     <nav>
       <ul>
         <li><a href="dashboard.html" class="active">📊 แดชบอร์ด</a></li>
-        <li><a href="stock.html">📦 จัดการสต็อก</a></li>
-        <li><a href="sales.html">🛒 การขาย</a></li>
+        <li><a href="stock.html">📦 สต็อก</a></li>
+        <li><a href="sales.html">🛒 ขาย</a></li>
         <li><a href="reports.html">📋 รายงาน</a></li>
-        <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้งาน</a></li>
+        <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้</a></li>
       </ul>
     </nav>
   </div>
@@ -40,32 +40,32 @@
       <!-- Stats Grid -->
       <div class="stats-grid">
         <div class="stat-card">
-          <h3>📦 จำนวนสินค้าทั้งหมด</h3>
+          <div class="stat-head"><span class="stat-icon">📦</span><h3>จำนวนสินค้าทั้งหมด</h3></div>
           <div class="value" id="totalProducts">0</div>
           <div class="change" id="productChange"></div>
         </div>
 
         <div class="stat-card">
-          <h3>💰 มูลค่าสต็อกทั้งหมด</h3>
+          <div class="stat-head"><span class="stat-icon">💰</span><h3>มูลค่าสต็อกทั้งหมด</h3></div>
           <div class="value" id="totalStockValue">฿0.00</div>
           <div class="change" id="stockChange"></div>
         </div>
 
         <div class="stat-card">
-          <h3>💵 ยอดขายวันนี้</h3>
+          <div class="stat-head"><span class="stat-icon">💵</span><h3>ยอดขายวันนี้</h3></div>
           <div class="value" id="todaySales">฿0.00</div>
           <div class="change" id="salesChange"></div>
         </div>
 
         <div class="stat-card">
-          <h3>📈 กำไรสะสม</h3>
+          <div class="stat-head"><span class="stat-icon">📈</span><h3>กำไรสะสม</h3></div>
           <div class="value" id="totalProfit">฿0.00</div>
           <div class="change" id="profitChange"></div>
         </div>
       </div>
 
       <!-- Charts -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); gap: 20px;">
         <!-- Sales Chart -->
         <div class="card">
           <h2>📈 ยอดขายรายวัน (7 วันที่ผ่านมา)</h2>
@@ -74,7 +74,7 @@
 
         <!-- Top Products -->
         <div class="card">
-          <h2>🏆 สินค้าขายดี Top 5</h2>
+          <h2>🏆 สินค้าขายดี 5 อันดับ (ตามจำนวนที่ขายได้)</h2>
           <canvas id="topProductsChart"></canvas>
         </div>
 
@@ -82,7 +82,7 @@
         <div class="card">
           <h2>⚠️ สต็อกต่ำ (เหลือ < 5 ชิ้น)</h2>
           <div id="lowStockList">
-            <p style="text-align: center; color: #999;">ข้อมูลกำลังโหลด...</p>
+            <p style="text-align: center; color: var(--text-faint);">ข้อมูลกำลังโหลด...</p>
           </div>
         </div>
 
@@ -90,7 +90,7 @@
         <div class="card">
           <h2>🛒 ธุรกรรมล่าสุด</h2>
           <div id="recentSalesList">
-            <p style="text-align: center; color: #999;">ข้อมูลกำลังโหลด...</p>
+            <p style="text-align: center; color: var(--text-faint);">ข้อมูลกำลังโหลด...</p>
           </div>
         </div>
       </div>
@@ -166,36 +166,61 @@
           datasets: [{
             label: 'ยอดขาย',
             data: last7Days.map(d => d.sales),
-            borderColor: '#e74c3c',
-            backgroundColor: 'rgba(231, 76, 60, 0.1)',
-            tension: 0.4,
-            fill: true
+            borderColor: CHART_COLOR,
+            backgroundColor: CHART_COLOR_SOFT,
+            borderWidth: 2,
+            tension: 0.35,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: CHART_SURFACE,
+            pointBorderColor: CHART_COLOR,
+            pointBorderWidth: 2
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: { label: c => formatCurrency(c.parsed.y) }
+            }
+          },
+          scales: chartScales()
         }
       });
 
-      // Chart 2: Top Products
-      const topProducts = demoData.products.slice(0, 5);
+      // Chart 2: สินค้าขายดี — นับจากจำนวนที่ขายจริงในบิลทั้งหมด
+      const soldCount = {};
+      demoData.sales.forEach(s => {
+        s.items.forEach(item => {
+          soldCount[item.name] = (soldCount[item.name] || 0) + item.quantity;
+        });
+      });
+      const topProducts = Object.entries(soldCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
       const ctx2 = document.getElementById('topProductsChart').getContext('2d');
       new Chart(ctx2, {
         type: 'bar',
         data: {
-          labels: topProducts.map(p => p.name.substring(0, 10)),
+          labels: topProducts.map(([name]) => name.length > 14 ? name.substring(0, 14) + '…' : name),
           datasets: [{
-            label: 'จำนวนสต็อก',
-            data: topProducts.map(p => p.quantity),
-            backgroundColor: '#2c3e50'
+            label: 'ขายไป (ชิ้น)',
+            data: topProducts.map(([, qty]) => qty),
+            backgroundColor: CHART_COLOR,
+            borderRadius: 4,
+            maxBarThickness: 48
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => `ขายไป ${c.parsed.y} ชิ้น` } }
+          },
+          scales: chartScales({ integer: true })
         }
       });
 
@@ -203,12 +228,12 @@
       const lowStock = demoData.products.filter(p => p.quantity < 5);
       const lowStockHTML = lowStock.length > 0
         ? lowStock.map(p => `
-          <div style="padding: 10px; border-bottom: 1px solid #ddd;">
+          <div style="padding: 10px; border-bottom: 1px solid var(--border);">
             <strong>${p.name}</strong>
             <span class="badge badge-danger">เหลือ ${p.quantity} ชิ้น</span>
           </div>
         `).join('')
-        : '<p style="text-align: center; color: #666;">✅ สต็อกทั้งหมดพอดี</p>';
+        : '<p style="text-align: center; color: var(--text-muted);">✅ สต็อกทั้งหมดพอดี</p>';
       document.getElementById('lowStockList').innerHTML = lowStockHTML;
 
       // Recent Sales
@@ -220,14 +245,14 @@
               ? `${first.name} +อีก ${s.items.length - 1} รายการ`
               : first.name;
             return `
-        <div style="padding: 10px; border-bottom: 1px solid #ddd;">
+        <div style="padding: 10px; border-bottom: 1px solid var(--border);">
           <strong>${label}</strong><br>
-          <small style="color: #999;">${formatDate(s.date)}</small>
-          <span style="float: right; font-weight: bold; color: #e74c3c;">${formatCurrency(s.total)}</span>
+          <small style="color: var(--text-faint);">${formatDate(s.date)}</small>
+          <span style="float: right; font-weight: bold; color: var(--primary);">${formatCurrency(s.total)}</span>
         </div>
       `;
           }).join('')
-        : '<p style="text-align: center; color: #666;">ยังไม่มีรายการขาย</p>';
+        : '<p style="text-align: center; color: var(--text-muted);">ยังไม่มีรายการขาย</p>';
       document.getElementById('recentSalesList').innerHTML = recentHTML;
     }
 
