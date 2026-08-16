@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตั้งค่าร้าน - ระบบสต็อก</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>⚙️ ตั้งค่าร้าน<span class="page-sub">Settings</span></h1>
+    <div class="user-info">
+      <span id="userDisplay">ผู้ใช้</span>
+      <button class="icon-btn" data-theme-toggle onclick="toggleTheme()">☀️</button>
+      <button class="btn btn-secondary btn-small" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <h2>🚗 ศูนย์แต่งรถ</h2>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="dashboard.html">📊 แดชบอร์ด</a></li>
+        <li><a href="stock.html">📦 สต็อก</a></li>
+        <li><a href="sales.html">🛒 ขาย</a></li>
+        <li><a href="reports.html">📋 รายงาน</a></li>
+        <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้</a></li>
+        <li id="settingsMenu" style="display: none;"><a href="settings.html" class="active">⚙️ ตั้งค่า</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <div class="toolbar">
+        <div class="search"></div>
+        <div class="toolbar-actions">
+          <button class="btn btn-secondary" onclick="previewDoc()">👁️ ดูตัวอย่างใบเสร็จ</button>
+          <button class="btn btn-primary" onclick="saveAll()">💾 บันทึกการตั้งค่า</button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;">
+        <!-- ข้อมูลร้าน -->
+        <div class="card">
+          <h2>🏪 ข้อมูลร้าน</h2>
+          <p class="hint">ข้อมูลนี้จะไปแสดงบนหัวใบเสร็จและใบสั่งซื้อ</p>
+
+          <div class="form-group">
+            <label for="shopName">ชื่อร้าน *</label>
+            <input type="text" id="shopName" placeholder="เช่น ศูนย์แต่งรถ ABC">
+          </div>
+
+          <div class="form-group">
+            <label for="shopNameEn">ชื่อภาษาอังกฤษ (ถ้ามี)</label>
+            <input type="text" id="shopNameEn" placeholder="เช่น ABC Car Parts">
+          </div>
+
+          <div class="form-group">
+            <label for="address">ที่อยู่</label>
+            <textarea id="address" rows="3" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label for="phone">เบอร์โทร</label>
+              <input type="tel" id="phone" placeholder="08x-xxx-xxxx">
+            </div>
+            <div class="form-group">
+              <label for="taxId">เลขประจำตัวผู้เสียภาษี</label>
+              <input type="text" id="taxId" placeholder="13 หลัก">
+            </div>
+          </div>
+        </div>
+
+        <!-- โลโก้ -->
+        <div class="card">
+          <h2>🖼️ โลโก้ร้าน</h2>
+          <p class="hint">แนะนำไฟล์ PNG พื้นโปร่งใส ระบบจะย่อให้อัตโนมัติ ไม่ต้องกังวลเรื่องขนาด</p>
+
+          <div class="image-upload" onclick="document.getElementById('logoInput').click()">
+            <p>📸 คลิกเพื่อเลือกไฟล์โลโก้</p>
+            <input type="file" id="logoInput" accept="image/*" onchange="pickLogo(event)">
+          </div>
+
+          <div id="logoBox" style="display: none; margin-top: 14px; text-align: center;">
+            <img id="logoPreview" class="image-preview" style="max-height: 120px; background: #fff; padding: 8px;">
+            <div style="margin-top: 10px;">
+              <button class="btn btn-secondary btn-small" onclick="clearLogo()">🗑️ เอาโลโก้ออก</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="card">
+          <h2>📱 QR Code บนใบเสร็จ</h2>
+          <p class="hint">เลือกได้ว่าจะให้ QR บนใบเสร็จเป็นแบบไหน</p>
+
+          <div class="form-group">
+            <label for="qrMode">รูปแบบ QR</label>
+            <select id="qrMode" onchange="updateQrMode()">
+              <option value="auto">🔄 สร้างอัตโนมัติจากข้อมูลบิล (เลขที่บิล ยอดเงิน วันที่)</option>
+              <option value="image">🏦 ใช้รูป QR ของร้าน เช่น พร้อมเพย์</option>
+              <option value="none">🚫 ไม่แสดง QR</option>
+            </select>
+          </div>
+
+          <div id="qrImageBox" style="display: none;">
+            <div class="image-upload" onclick="document.getElementById('qrInput').click()">
+              <p>📸 คลิกเพื่อเลือกรูป QR (บันทึกจากแอปธนาคารได้เลย)</p>
+              <input type="file" id="qrInput" accept="image/*" onchange="pickQr(event)">
+            </div>
+
+            <div id="qrBox" style="display: none; margin-top: 14px; text-align: center;">
+              <img id="qrPreview" class="image-preview" style="max-height: 160px; background: #fff; padding: 8px;">
+              <div style="margin-top: 10px;">
+                <button class="btn btn-secondary btn-small" onclick="clearQr()">🗑️ เอารูป QR ออก</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" id="qrCaptionBox" style="margin-top: 14px;">
+            <label for="qrCaption">ข้อความใต้ QR</label>
+            <input type="text" id="qrCaption" placeholder="เช่น สแกนเพื่อชำระเงิน">
+          </div>
+        </div>
+
+        <!-- ข้อความบนเอกสาร -->
+        <div class="card">
+          <h2>📝 ข้อความท้ายเอกสาร</h2>
+          <p class="hint">แก้ไขได้ตามใจ จะแสดงท้ายเอกสารแต่ละประเภท</p>
+
+          <div class="form-group">
+            <label for="receiptNote">ท้ายใบเสร็จรับเงิน</label>
+            <textarea id="receiptNote" rows="2" placeholder="เช่น ขอบคุณที่ใช้บริการ"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="poNote">ท้ายใบสั่งซื้อ</label>
+            <textarea id="poNote" rows="2" placeholder="เช่น กรุณาตรวจสอบรายการก่อนยืนยัน"></textarea>
+          </div>
+
+          <div class="alert alert-warning" style="margin-bottom: 0;">
+            💡 ตอนออกใบเสร็จจริง ยังกดแก้ข้อความบนเอกสารได้อีกทีก่อนพิมพ์
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ตัวอย่างเอกสาร -->
+  <div id="previewModal" class="modal">
+    <div class="modal-content" style="max-width: 760px;">
+      <div class="modal-header">
+        <h2>👁️ ตัวอย่างใบเสร็จ</h2>
+        <span class="modal-close" onclick="document.getElementById('previewModal').style.display='none'">&times;</span>
+      </div>
+      <div id="previewBox"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="document.getElementById('previewModal').style.display='none'">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/documents.js"></script>
+  <script>
+    if (!getLocalUser()) {
+      window.location.href = 'index.html';
+    }
+
+    const user = getLocalUser();
+    document.getElementById('userDisplay').textContent = `สวัสดี, ${user.name}`;
+
+    // หน้านี้เปิดให้เฉพาะ admin กับ manager
+    if (user.role !== 'admin' && user.role !== 'manager') {
+      showNotification('⛔ เฉพาะผู้ดูแลระบบและผู้จัดการเท่านั้น', 'error');
+      setTimeout(() => window.location.href = 'dashboard.html', 1800);
+    }
+
+    if (user.role === 'admin') document.getElementById('usersMenu').style.display = 'block';
+    document.getElementById('settingsMenu').style.display = 'block';
+
+    let logoData = '';
+    let qrData = '';
+
+    function fillForm(s) {
+      document.getElementById('shopName').value = s.shopName || '';
+      document.getElementById('shopNameEn').value = s.shopNameEn || '';
+      document.getElementById('address').value = s.address || '';
+      document.getElementById('phone').value = s.phone || '';
+      document.getElementById('taxId').value = s.taxId || '';
+      document.getElementById('qrMode').value = s.qrMode || 'auto';
+      document.getElementById('qrCaption').value = s.qrCaption || '';
+      document.getElementById('receiptNote').value = s.receiptNote || '';
+      document.getElementById('poNote').value = s.poNote || '';
+
+      logoData = s.logo || '';
+      qrData = s.qrImage || '';
+      showLogo();
+      showQr();
+      updateQrMode();
+    }
+
+    function showLogo() {
+      const box = document.getElementById('logoBox');
+      if (logoData) {
+        document.getElementById('logoPreview').src = logoData;
+        box.style.display = 'block';
+      } else {
+        box.style.display = 'none';
+      }
+    }
+
+    function showQr() {
+      const box = document.getElementById('qrBox');
+      if (qrData) {
+        document.getElementById('qrPreview').src = qrData;
+        box.style.display = 'block';
+      } else {
+        box.style.display = 'none';
+      }
+    }
+
+    function updateQrMode() {
+      const mode = document.getElementById('qrMode').value;
+      document.getElementById('qrImageBox').style.display = mode === 'image' ? 'block' : 'none';
+      document.getElementById('qrCaptionBox').style.display = mode === 'none' ? 'none' : 'block';
+    }
+
+    async function pickLogo(event) {
+      try {
+        logoData = await readImageResized(event.target.files[0], 400);
+        showLogo();
+        showNotification('เลือกโลโก้แล้ว อย่าลืมกดบันทึก', 'info');
+      } catch (err) {
+        showNotification('❌ ' + err.message, 'error');
+      }
+    }
+
+    async function pickQr(event) {
+      try {
+        qrData = await readImageResized(event.target.files[0], 600);
+        showQr();
+        showNotification('เลือกรูป QR แล้ว อย่าลืมกดบันทึก', 'info');
+      } catch (err) {
+        showNotification('❌ ' + err.message, 'error');
+      }
+    }
+
+    function clearLogo() {
+      logoData = '';
+      document.getElementById('logoInput').value = '';
+      showLogo();
+    }
+
+    function clearQr() {
+      qrData = '';
+      document.getElementById('qrInput').value = '';
+      showQr();
+    }
+
+    function collect() {
+      return {
+        shopName: document.getElementById('shopName').value.trim() || 'ศูนย์แต่งรถ',
+        shopNameEn: document.getElementById('shopNameEn').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        taxId: document.getElementById('taxId').value.trim(),
+        logo: logoData,
+        qrMode: document.getElementById('qrMode').value,
+        qrImage: qrData,
+        qrCaption: document.getElementById('qrCaption').value.trim(),
+        receiptNote: document.getElementById('receiptNote').value.trim(),
+        poNote: document.getElementById('poNote').value.trim()
+      };
+    }
+
+    async function saveAll() {
+      try {
+        await saveSettings(collect());
+        showNotification('✅ บันทึกการตั้งค่าเรียบร้อย', 'success');
+      } catch (err) {
+        showNotification('❌ บันทึกไม่สำเร็จ: ' + err.message, 'error');
+      }
+    }
+
+    // ดูตัวอย่างด้วยบิลสมมติ ไม่แตะข้อมูลจริง
+    function previewDoc() {
+      const demo = {
+        id: 'ตัวอย่าง',
+        items: [
+          { name: 'สเปอร์ยาง BBS', price: 2500, quantity: 2 },
+          { name: 'ไฟหรี่ LED ขาว', price: 1200, quantity: 1 }
+        ],
+        subtotal: 6200,
+        discount: 200,
+        total: 6000,
+        payment: 'cash',
+        customer: 'คุณลูกค้า',
+        date: new Date().toISOString()
+      };
+
+      document.getElementById('previewBox').innerHTML = buildDocument('receipt', demo, collect());
+      document.getElementById('previewModal').style.display = 'block';
+    }
+
+    dataReady.then(() => fillForm(getSettings()));
+  </script>
+</body>
+</html>

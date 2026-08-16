@@ -30,6 +30,7 @@
         <li><a href="sales.html">🛒 ขาย</a></li>
         <li><a href="reports.html">📋 รายงาน</a></li>
         <li id="usersMenu" style="display: none;"><a href="users.html" class="active">👤 ผู้ใช้</a></li>
+        <li id="settingsMenu" style="display: none;"><a href="settings.html">⚙️ ตั้งค่า</a></li>
       </ul>
     </nav>
   </div>
@@ -191,6 +192,7 @@
 
     document.getElementById('userDisplay').textContent = `สวัสดี, ${user.name}`;
     document.getElementById('usersMenu').style.display = 'block';
+    document.getElementById('settingsMenu').style.display = 'block';
 
     // ผู้ใช้งานจาก store (ใช้จริงตอน login)
     let users = [];

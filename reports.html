@@ -31,6 +31,7 @@
         <li><a href="sales.html">🛒 ขาย</a></li>
         <li><a href="reports.html" class="active">📋 รายงาน</a></li>
         <li id="usersMenu" style="display: none;"><a href="users.html">👤 ผู้ใช้</a></li>
+        <li id="settingsMenu" style="display: none;"><a href="settings.html">⚙️ ตั้งค่า</a></li>
       </ul>
     </nav>
   </div>
@@ -178,6 +179,11 @@
 
     if (user.role === 'admin') {
       document.getElementById('usersMenu').style.display = 'block';
+    }
+
+    // ตั้งค่าร้าน เปิดให้ admin กับ manager
+    if (user.role === 'admin' || user.role === 'manager') {
+      document.getElementById('settingsMenu').style.display = 'block';
     }
 
     // ข้อมูลจาก store (เติมค่าเมื่อโหลดเสร็จ)

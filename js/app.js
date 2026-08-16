@@ -112,6 +112,35 @@ function formatDate(date) {
   return new Date(date).toLocaleDateString('th-TH', options);
 }
 
+// อ่านไฟล์รูปแล้วย่อขนาดก่อนเก็บ — กันรูปจากมือถือ 4 MB ทำให้บันทึกไม่ผ่าน
+function readImageResized(file, maxSize = 600) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error('ไฟล์ที่เลือกไม่ใช่รูปภาพ'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('เปิดรูปไม่สำเร็จ'));
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // PNG รักษาพื้นโปร่งใสของโลโก้และความคมของ QR ไว้ได้
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // ฟังก์ชัน Generate QR Code URL
 function generateQRCode(data) {
   const encodedData = encodeURIComponent(JSON.stringify(data));

@@ -11,7 +11,23 @@ const STORE_KEYS = {
   products: 'cps_products',
   sales: 'cps_sales',
   users: 'cps_users',
+  settings: 'cps_settings',
   token: 'cps_token'
+};
+
+// ค่าตั้งต้นของข้อมูลร้าน (ใช้เมื่อยังไม่เคยตั้งค่า)
+const DEFAULT_SETTINGS = {
+  shopName: 'ศูนย์แต่งรถ',
+  shopNameEn: 'Car Parts Stock',
+  address: '',
+  phone: '',
+  taxId: '',
+  logo: '',
+  qrMode: 'auto',        // auto = สร้างจากข้อมูลบิล | image = รูปที่อัปโหลด | none = ไม่แสดง
+  qrImage: '',
+  qrCaption: 'สแกนเพื่อชำระเงิน',
+  receiptNote: 'ขอบคุณที่ใช้บริการ ยินดีต้อนรับกลับมา',
+  poNote: 'กรุณาตรวจสอบรายการก่อนยืนยันการสั่งซื้อ'
 };
 
 // ---------- ข้อมูลตัวอย่างของ Demo Mode ----------
@@ -76,7 +92,7 @@ function nextId(list) {
 
 const USE_SUPABASE = typeof supabaseClient !== 'undefined' && supabaseClient !== null;
 
-let cache = { products: [], sales: [], users: [] };
+let cache = { products: [], sales: [], users: [], settings: { ...DEFAULT_SETTINGS } };
 
 function getToken() {
   return localStorage.getItem(STORE_KEYS.token);
@@ -110,6 +126,7 @@ async function loadAll() {
     cache.products = readStore(STORE_KEYS.products, SEED_PRODUCTS);
     cache.sales = readStore(STORE_KEYS.sales, seedSales);
     cache.users = readStore(STORE_KEYS.users, SEED_USERS);
+    cache.settings = { ...DEFAULT_SETTINGS, ...readStore(STORE_KEYS.settings, DEFAULT_SETTINGS) };
     return;
   }
 
@@ -123,6 +140,13 @@ async function loadAll() {
 
   cache.products = products || [];
   cache.sales = (sales || []).map(s => ({ ...s, items: s.items || [] }));
+
+  // ตารางตั้งค่ามาจากไฟล์ schema-settings.sql — ถ้ายังไม่ได้รัน ก็ใช้ค่าเริ่มต้นไปก่อน
+  try {
+    cache.settings = { ...DEFAULT_SETTINGS, ...(await rpc('app_settings', { p_token: token })) };
+  } catch (err) {
+    console.warn('[store] ยังไม่มีตารางตั้งค่า ใช้ค่าเริ่มต้นแทน:', err.message);
+  }
 
   // ตารางผู้ใช้เปิดให้เฉพาะ admin ถ้าไม่ใช่ก็ข้ามไปเงียบ ๆ
   const localUser = getLocalUser();
@@ -354,6 +378,26 @@ async function removeUser(id) {
 
   await rpc('app_delete_user', { p_token: getToken(), p_id: id });
   cache.users = await rpc('app_users', { p_token: getToken() });
+}
+
+// ==========================================================================
+// ตั้งค่าร้าน (โลโก้ / ที่อยู่ / QR / ข้อความบนเอกสาร)
+// ==========================================================================
+
+function getSettings() {
+  return cache.settings;
+}
+
+async function saveSettings(patch) {
+  if (!USE_SUPABASE) {
+    cache.settings = { ...cache.settings, ...patch };
+    writeStore(STORE_KEYS.settings, cache.settings);
+    return cache.settings;
+  }
+
+  const data = await rpc('app_save_settings', { p_token: getToken(), p_data: patch });
+  cache.settings = { ...DEFAULT_SETTINGS, ...data };
+  return cache.settings;
 }
 
 // ==========================================================================

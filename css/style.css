@@ -136,9 +136,25 @@ body {
     'Segoe UI', system-ui, sans-serif;
   background-color: var(--bg);
   color: var(--text);
-  line-height: 1.6;
+  /* ภาษาไทยมีสระบนล่าง ต้องการระยะบรรทัดมากกว่าอังกฤษ ไม่งั้นวรรณยุกต์ชนกัน */
+  line-height: 1.65;
   font-size: 15px;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ตัวเลขความกว้างเท่ากันทุกตัว คอลัมน์เงินจะเรียงตรงกัน */
+.text-right,
+.doc,
+.stat-card .value,
+.table td,
+.doc-num {
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .text-right,
@@ -931,6 +947,323 @@ input[type='checkbox'] {
 }
 .notification.info {
   background-color: #0284c7;
+}
+
+/* ==========================================================================
+   เอกสาร: ใบเสร็จรับเงิน / ใบสั่งซื้อ
+   เป็นกระดาษขาวตัวดำเสมอ ไม่ตามโหมดมืด เพราะต้องพิมพ์ลงกระดาษจริง
+   ========================================================================== */
+
+.doc {
+  background: #ffffff;
+  color: #111827;
+  padding: 28px 30px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+}
+
+.doc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #111827;
+}
+
+.doc-shop {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.doc-logo {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.doc-shop-name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.doc-shop-en {
+  font-size: 12px;
+  color: #6b7280;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doc-shop-info {
+  font-size: 12px;
+  color: #4b5563;
+  white-space: pre-line;
+  margin-top: 2px;
+}
+
+.doc-title {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.doc-title-th {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.doc-title-en {
+  font-size: 10.5px;
+  color: #6b7280;
+  letter-spacing: 0.16em;
+  margin-bottom: 8px;
+}
+
+.doc-meta {
+  margin-left: auto;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.doc-meta td {
+  padding: 1px 0 1px 10px;
+  text-align: right;
+}
+
+.doc-meta td:first-child {
+  color: #6b7280;
+  padding-left: 0;
+}
+
+.doc-party {
+  margin: 14px 0;
+  font-size: 13px;
+}
+
+.doc-party-label {
+  color: #6b7280;
+  margin-right: 8px;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+}
+
+.doc-table th {
+  background: #f3f4f6;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374151;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.doc-table th:nth-child(n + 3) {
+  text-align: right;
+}
+
+.doc-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.doc-table .doc-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.doc-table td.doc-num:first-child {
+  text-align: center;
+  color: #6b7280;
+}
+
+.doc-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.doc-qr {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.doc-qr-img {
+  width: 118px;
+  height: 118px;
+  object-fit: contain;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px;
+  background: #fff;
+}
+
+.doc-qr-caption {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 5px;
+}
+
+.doc-total {
+  margin-left: auto;
+  border-collapse: collapse;
+  min-width: 260px;
+  font-size: 13.5px;
+}
+
+.doc-total td {
+  padding: 5px 0;
+}
+
+.doc-total td:first-child {
+  color: #4b5563;
+  padding-right: 24px;
+}
+
+.doc-total .doc-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.doc-total .doc-grand td {
+  font-size: 17px;
+  font-weight: 700;
+  border-top: 2px solid #111827;
+  border-bottom: 2px solid #111827;
+  padding: 9px 0;
+}
+
+.doc-baht {
+  text-align: center;
+  font-size: 13px;
+  color: #374151;
+  margin-top: 14px;
+  padding: 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.doc-note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: #4b5563;
+  text-align: center;
+  white-space: pre-line;
+}
+
+.doc-sign {
+  display: flex;
+  justify-content: space-around;
+  gap: 40px;
+  margin-top: 34px;
+  font-size: 12px;
+  color: #4b5563;
+  text-align: center;
+}
+
+.doc-sign-box {
+  flex: 1;
+  max-width: 220px;
+}
+
+.doc-sign-line {
+  border-bottom: 1px dotted #9ca3af;
+  margin-bottom: 6px;
+  height: 34px;
+}
+
+/* ช่องที่แก้ไขได้ — มีเส้นประบอกบนหน้าจอ แต่หายไปตอนพิมพ์ */
+.doc-edit {
+  outline: none;
+  border-radius: 3px;
+  transition: background-color 0.15s ease;
+}
+
+.doc-edit:hover {
+  background-color: #fef3c7;
+  box-shadow: 0 0 0 2px #fef3c7;
+}
+
+.doc-edit:focus {
+  background-color: #fef9c3;
+  box-shadow: 0 0 0 2px #facc15;
+}
+
+.doc-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  background: var(--surface-2);
+  border-radius: 10px;
+}
+
+/* ข้อความอธิบายใต้หัวข้อการ์ด */
+.hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: -8px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 700px) {
+  .doc {
+    padding: 18px 16px;
+    font-size: 12.5px;
+  }
+
+  .doc-head,
+  .doc-bottom {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .doc-title,
+  .doc-meta {
+    text-align: left;
+    margin-left: 0;
+  }
+
+  .doc-meta td {
+    text-align: left;
+  }
+
+  .doc-total {
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .doc-qr {
+    align-self: center;
+  }
+}
+
+@media print {
+  .doc {
+    padding: 0;
+    border-radius: 0;
+    font-size: 12.5px;
+  }
+
+  .doc-edit:hover,
+  .doc-edit:focus {
+    background: none !important;
+    box-shadow: none !important;
+  }
 }
 
 /* ==========================================================================
