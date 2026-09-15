@@ -41,7 +41,8 @@ jobs:
             --retry 3 --retry-delay 15 --max-time 30 \
             "$SUPABASE_URL/rest/v1/products?select=id&limit=1" \
             -H "apikey: $SUPABASE_KEY" \
-            -H "Authorization: Bearer $SUPABASE_KEY" || echo "000")
+            -H "Authorization: Bearer $SUPABASE_KEY" || true)
+          # curl พิมพ์ 000 เองอยู่แล้วตอนติดต่อไม่ได้ ไม่ต้องเติมซ้ำ
 
           echo "HTTP $code"
           cat body.txt 2>/dev/null || true
