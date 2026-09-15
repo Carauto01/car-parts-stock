@@ -1,0 +1,55 @@
+# กระตุ้นฐานข้อมูล Supabase ไม่ให้ถูกพัก
+#
+# Supabase แบบฟรีจะพักโปรเจกต์ที่ไม่มีการใช้งานเกิน 7 วัน
+# งานนี้ส่งคำขออ่านข้อมูลเล็ก ๆ ทุก 3 วัน จึงไม่มีช่วงไหนเงียบนานพอให้โดนพัก
+#
+# ถ้าเรียกไม่สำเร็จ งานจะขึ้นสีแดงและ GitHub จะส่งอีเมลแจ้งเจ้าของ repo
+# ใช้เป็นสัญญาณเตือนล่วงหน้าว่าฐานข้อมูลมีปัญหา ก่อนพนักงานจะเจอเอง
+
+name: กระตุ้น Supabase ไม่ให้ถูกพัก
+
+on:
+  schedule:
+    # ทุก 3 วัน เวลา 09:17 น. (02:17 UTC) — เลี่ยงต้นชั่วโมงที่ GitHub มักคิวยาว
+    - cron: '17 2 */3 * *'
+  # กดรันเองได้จากแท็บ Actions
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: เรียกฐานข้อมูล
+        env:
+          # URL ไม่ใช่ความลับ (อยู่ใน js/config.js ที่เปิดสาธารณะอยู่แล้ว) จึงใส่ตรงนี้ได้
+          SUPABASE_URL: https://hebnokrvhexmkuuhgqoa.supabase.co
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::ยังไม่ได้ตั้งค่า secret SUPABASE_ANON_KEY (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+
+          # อ่านสินค้า 1 แถว — ตารางปิดด้วย RLS จึงได้ [] กลับมา
+          # แต่ฐานข้อมูลได้ประมวลผลคำขอจริง นับเป็นการใช้งาน และไม่มีผลข้างเคียงกับข้อมูลร้าน
+          code=$(curl -s -o body.txt -w '%{http_code}' \
+            --retry 3 --retry-delay 15 --max-time 30 \
+            "$SUPABASE_URL/rest/v1/products?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" || echo "000")
+
+          echo "HTTP $code"
+          cat body.txt 2>/dev/null || true
+          echo
+
+          if [ "$code" != "200" ]; then
+            echo "::error::เรียก Supabase ไม่สำเร็จ (HTTP $code) — โปรเจกต์อาจถูกพักไปแล้ว ให้เข้า supabase.com/dashboard แล้วกด Restore project"
+            exit 1
+          fi
+
+          echo "✅ ฐานข้อมูลทำงานปกติ"
