@@ -59,7 +59,17 @@
       errorMsg.style.display = 'none';
 
       // login() อยู่ใน js/store.js — เช็คกับฐานข้อมูลถ้าต่อ Supabase แล้ว
-      const user = await login(username, password);
+      let user = null;
+      try {
+        user = await login(username, password);
+      } catch (err) {
+        // ติดต่อฐานข้อมูลไม่ได้ — อย่าบอกว่ารหัสผิด พนักงานจะเข้าใจผิด
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'เข้าสู่ระบบ';
+        errorMsg.textContent = '📡 ' + err.message;
+        errorMsg.style.display = 'block';
+        return;
+      }
 
       submitBtn.disabled = false;
       submitBtn.textContent = 'เข้าสู่ระบบ';

@@ -107,6 +107,13 @@ function setToken(token) {
 async function rpc(fn, params = {}) {
   const { data, error } = await supabaseClient.rpc(fn, params);
 
+  // ติดต่อเซิร์ฟเวอร์ไม่ได้เลย (เน็ตหลุด หรือโปรเจกต์ Supabase ถูกพัก) — แยกจากรหัสผิด
+  if (error && /Failed to fetch|NetworkError|Load failed/i.test(error.message || '')) {
+    const netErr = new Error('เชื่อมต่อฐานข้อมูลไม่ได้ ลองใหม่อีกครั้ง ถ้ายังไม่ได้ให้แจ้งผู้ดูแลระบบ');
+    netErr.network = true;
+    throw netErr;
+  }
+
   if (error) {
     // เซสชันหมดอายุ → เด้งกลับหน้า login
     if (error.message && error.message.includes('เซสชันหมดอายุ')) {
@@ -185,7 +192,8 @@ async function login(username, password) {
     setToken(result.token);
     return result.user;
   } catch (err) {
-    return null;   // รหัสผิด — ให้หน้า login แสดงข้อความเอง
+    if (err.network) throw err;   // ติดต่อไม่ได้ ≠ รหัสผิด ให้หน้า login บอกให้ถูก
+    return null;                  // รหัสผิด — ให้หน้า login แสดงข้อความเอง
   }
 }
 
