@@ -27,7 +27,7 @@ jobs:
       - name: เรียกฐานข้อมูล
         env:
           # URL ไม่ใช่ความลับ (อยู่ใน js/config.js ที่เปิดสาธารณะอยู่แล้ว) จึงใส่ตรงนี้ได้
-          SUPABASE_URL: https://hebnokrvhexmkuuhgqoa.supabase.co
+          SUPABASE_URL: https://ccjnnfownpqrbbmjyulp.supabase.co
           SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$SUPABASE_KEY" ]; then
