@@ -301,28 +301,14 @@ function showBanner(html, tone = 'danger', dismissible = false) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. ต่อฐานข้อมูลไม่ได้ — สำคัญสุด ต้องขึ้นก่อนเพื่อน และปิดไม่ได้
+  // ต่อฐานข้อมูลไม่ได้ — เรื่องเดียวที่เตือนแบบขวางจอ เพราะถ้าพลาดไปจะเสียข้อมูลจริง
+  //
+  // เคยมีแถบเตือน "ไม่ได้สำรองข้อมูลมานาน" ตรงนี้ด้วย แต่ถอดออกตามที่เจ้าของร้านสั่ง
+  // สถานะการสำรองยังดูได้ที่หน้าตั้งค่า → การ์ดสำรองข้อมูล
   if (typeof OFFLINE !== 'undefined' && OFFLINE) {
     showBanner(
       '🔴 <b>เชื่อมต่อฐานข้อมูลไม่ได้</b> — ตอนนี้ยังบันทึกอะไรไม่ได้ ' +
       'กรุณาตรวจอินเทอร์เน็ตแล้วรีเฟรชหน้าจอ <u>อย่าเพิ่งกรอกข้อมูล</u> เพราะจะไม่ถูกบันทึก'
     );
-    return;   // ต่อไม่ติดก็ไม่ต้องเตือนเรื่องสำรองข้อมูลซ้ำซ้อน
   }
-
-  // 2. ไม่ได้สำรองข้อมูลมานาน — เตือนเฉพาะคนที่กดสำรองได้จริง
-  const user = typeof getLocalUser === 'function' ? getLocalUser() : null;
-  if (!user || (user.role !== 'admin' && user.role !== 'manager')) return;
-  if (typeof backupIsDue !== 'function' || !backupIsDue()) return;
-  if (location.pathname.endsWith('settings.html')) return;   // อยู่หน้าที่กดสำรองได้อยู่แล้ว
-
-  const days = daysSinceBackup();
-  const backupLabel = days === null ? 'ยังไม่เคยสำรองข้อมูลเลย' : `สำรองข้อมูลครั้งล่าสุดเมื่อ ${days} วันที่แล้ว`;
-
-  showBanner(
-    `🛟 <b>${backupLabel}</b> — ฐานข้อมูลอยู่ที่เดียวและไม่มีแบ็กอัปอัตโนมัติ ` +
-    '<a href="settings.html#backup">กดสำรองข้อมูลตอนนี้</a>',
-    'warning',
-    true
-  );
 });
