@@ -39,7 +39,7 @@ tmp/
 
 # Database backups
 *.sql
-!schema.sql
+!schema*.sql
 *.bak
 
 # Sensitive files
