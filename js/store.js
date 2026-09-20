@@ -92,6 +92,18 @@ function nextId(list) {
 
 const USE_SUPABASE = typeof supabaseClient !== 'undefined' && supabaseClient !== null;
 
+// ตั้งค่าฐานข้อมูลไว้แล้ว แต่ต่อไม่ติด — ห้ามเขียนอะไรลงเครื่องแทนเด็ดขาด (เหตุผลอยู่ใน config.js)
+const OFFLINE = typeof SUPABASE_FAILED !== 'undefined' && SUPABASE_FAILED;
+
+const OFFLINE_MESSAGE =
+  'เชื่อมต่อฐานข้อมูลไม่ได้ ตอนนี้ยังบันทึกอะไรไม่ได้ — ' +
+  'กรุณาตรวจอินเทอร์เน็ตแล้วรีเฟรชหน้าจอ อย่าเพิ่งกรอกข้อมูลเพราะจะไม่ถูกบันทึก';
+
+// เรียกไว้ต้นทุกฟังก์ชันที่เขียนข้อมูล — ให้ล้มตั้งแต่ต้นทาง ดีกว่าปล่อยให้เข้าใจผิดว่าบันทึกแล้ว
+function assertOnline() {
+  if (OFFLINE) throw new Error(OFFLINE_MESSAGE);
+}
+
 let cache = { products: [], sales: [], users: [], settings: { ...DEFAULT_SETTINGS } };
 
 function getToken() {
@@ -129,6 +141,10 @@ async function rpc(fn, params = {}) {
 
 // โหลดข้อมูลทั้งหมดเข้าแคช — หน้าเว็บต้อง await dataReady ก่อนวาดหน้าจอ
 async function loadAll() {
+  // ต่อฐานข้อมูลไม่ติด — ปล่อยแคชว่างไว้ ห้ามเอาข้อมูลตัวอย่างขึ้นจอ
+  // ไม่งั้นพนักงานจะเห็นสินค้า 5 รายการปลอม ๆ แล้วนึกว่าสต็อกจริงหายไปหมด
+  if (OFFLINE) throw new Error(OFFLINE_MESSAGE);
+
   if (!USE_SUPABASE) {
     cache.products = readStore(STORE_KEYS.products, SEED_PRODUCTS);
     cache.sales = readStore(STORE_KEYS.sales, seedSales);
@@ -179,6 +195,9 @@ const dataReady = loadAll().catch(err => {
 // ==========================================================================
 
 async function login(username, password) {
+  // ต่อฐานข้อมูลไม่ติด — ห้ามปล่อยให้ล็อกอินด้วยรายชื่อตัวอย่างในโค้ดเข้ามาใช้งานได้
+  assertOnline();
+
   if (!USE_SUPABASE) {
     const user = readStore(STORE_KEYS.users, SEED_USERS).find(
       u => u.username === username && u.password === password && u.status === 'active'
@@ -218,6 +237,7 @@ function getProducts() {
 
 // product ที่ไม่มี id = เพิ่มใหม่, มี id = แก้ไข
 async function saveProduct(product) {
+  assertOnline();
   if (!USE_SUPABASE) {
     const list = cache.products;
     if (product.id) {
@@ -245,6 +265,7 @@ async function saveProduct(product) {
 }
 
 async function removeProduct(id) {
+  assertOnline();
   if (!USE_SUPABASE) {
     cache.products = cache.products.filter(p => p.id !== id);
     writeStore(STORE_KEYS.products, cache.products);
@@ -265,6 +286,7 @@ function getSales() {
 
 // ตัดสต็อกและบันทึกบิลพร้อมกัน ถ้าของไม่พอจะไม่บันทึกอะไรเลย
 async function createSale({ items, discount = 0, payment = 'cash', customer = '' }) {
+  assertOnline();
   const clean = items.map(({ id, name, cost, price, quantity }) => ({ id, name, cost, price, quantity }));
   const subtotal = clean.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
@@ -337,6 +359,7 @@ function getUsers() {
 }
 
 async function saveUser(user, password) {
+  assertOnline();
   if (!USE_SUPABASE) {
     const list = cache.users;
     if (user.id) {
@@ -367,6 +390,7 @@ async function saveUser(user, password) {
 }
 
 async function setUserPassword(id, password) {
+  assertOnline();
   if (!USE_SUPABASE) {
     const found = cache.users.find(u => u.id === id);
     if (found) found.password = password;
@@ -377,7 +401,24 @@ async function setUserPassword(id, password) {
   await rpc('app_set_password', { p_token: getToken(), p_id: id, p_password: password });
 }
 
+// ปิด/เปิดบัญชี — วิธีที่ควรใช้กับพนักงานที่ลาออก เพราะบิลเก่ายังผูกชื่อไว้ครบ
+// (ต้องรัน schema-fixes.sql ก่อน ฟังก์ชันฝั่งฐานข้อมูลถึงจะมี)
+async function setUserStatus(id, status) {
+  assertOnline();
+
+  if (!USE_SUPABASE) {
+    const found = cache.users.find(u => u.id === id);
+    if (found) found.status = status;
+    writeStore(STORE_KEYS.users, cache.users);
+    return;
+  }
+
+  await rpc('app_set_user_status', { p_token: getToken(), p_id: id, p_status: status });
+  cache.users = await rpc('app_users', { p_token: getToken() });
+}
+
 async function removeUser(id) {
+  assertOnline();
   if (!USE_SUPABASE) {
     cache.users = cache.users.filter(u => u.id !== id);
     writeStore(STORE_KEYS.users, cache.users);
@@ -397,6 +438,7 @@ function getSettings() {
 }
 
 async function saveSettings(patch) {
+  assertOnline();
   if (!USE_SUPABASE) {
     cache.settings = { ...cache.settings, ...patch };
     writeStore(STORE_KEYS.settings, cache.settings);
@@ -406,6 +448,122 @@ async function saveSettings(patch) {
   const data = await rpc('app_save_settings', { p_token: getToken(), p_data: patch });
   cache.settings = { ...DEFAULT_SETTINGS, ...data };
   return cache.settings;
+}
+
+// ==========================================================================
+// สำรองข้อมูล / กู้คืน
+//
+// ฐานข้อมูลอยู่ที่เดียวและแพลนฟรีไม่มีแบ็กอัปให้ ถ้าโปรเจกต์หายก็คือหายถาวร
+// ไฟล์สำรองที่ร้านถือไว้เองจึงเป็นตาข่ายรองรับชั้นเดียวที่มี
+// ==========================================================================
+
+const BACKUP_KEY = 'cps_last_backup';
+const BACKUP_DUE_DAYS = 7;          // เกินกี่วันถึงจะขึ้นเตือนให้สำรองใหม่
+
+// รวบข้อมูลทั้งหมดที่อยู่ในแคชตอนนี้เป็นก้อนเดียว
+function buildBackup() {
+  return {
+    format: 'car-parts-stock-backup',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    shopName: cache.settings.shopName || '',
+    products: cache.products,
+    sales: cache.sales,
+    settings: cache.settings
+  };
+}
+
+function getLastBackupAt() {
+  const raw = localStorage.getItem(BACKUP_KEY);
+  return raw ? new Date(raw) : null;
+}
+
+// null = ไม่เคยสำรองเลย
+function daysSinceBackup() {
+  const last = getLastBackupAt();
+  if (!last || isNaN(last)) return null;
+  return Math.floor((Date.now() - last.getTime()) / 86400000);
+}
+
+function backupIsDue() {
+  const days = daysSinceBackup();
+  return days === null || days >= BACKUP_DUE_DAYS;
+}
+
+// โหลดไฟล์สำรองลงเครื่อง แล้วจำวันที่ไว้เตือนรอบหน้า
+function downloadBackup() {
+  const backup = buildBackup();
+
+  if (!backup.products.length && !backup.sales.length) {
+    throw new Error('ยังไม่มีข้อมูลให้สำรอง');
+  }
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+
+  link.href = URL.createObjectURL(blob);
+  link.download = `สำรองข้อมูลสต๊อก-${stamp}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+
+  localStorage.setItem(BACKUP_KEY, new Date().toISOString());
+  return backup;
+}
+
+// ตรวจไฟล์ก่อนแตะฐานข้อมูล — ไฟล์ผิดรูปต้องรู้ตั้งแต่ก่อนเริ่ม ไม่ใช่กู้ไปครึ่งทางแล้วพัง
+function parseBackup(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    throw new Error('ไฟล์นี้ไม่ใช่ไฟล์สำรองข้อมูล (อ่านเนื้อหาไม่ออก)');
+  }
+
+  if (!data || data.format !== 'car-parts-stock-backup') {
+    throw new Error('ไฟล์นี้ไม่ใช่ไฟล์สำรองของระบบนี้');
+  }
+
+  if (!Array.isArray(data.products)) {
+    throw new Error('ไฟล์สำรองเสียหาย — ไม่พบรายการสินค้า');
+  }
+
+  return data;
+}
+
+// กู้คืน "เฉพาะรายการสินค้า" เท่านั้น
+//
+// ตั้งใจไม่กู้บิลขายกลับ เพราะการบันทึกบิลจะไปตัดสต็อกซ้ำอีกรอบ
+// ยอดสต็อกจะเพี้ยนหนักกว่าเดิม — ประวัติการขายเก่าให้เปิดดูจากไฟล์สำรองแทน
+async function restoreProducts(data) {
+  assertOnline();
+
+  const existing = getProducts();
+  const result = { added: 0, updated: 0, failed: [] };
+
+  for (const item of data.products) {
+    if (!item || !item.name) continue;
+
+    // เทียบด้วยชื่อ เพราะ id จากฐานข้อมูลเดิมใช้ต่อไม่ได้แล้ว
+    const match = existing.find(p => p.name === item.name);
+
+    try {
+      await saveProduct({
+        id: match ? match.id : undefined,
+        name: item.name,
+        category: item.category || '',
+        cost: Number(item.cost) || 0,
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 0,
+        image: item.image || ''
+      });
+      if (match) result.updated++; else result.added++;
+    } catch (err) {
+      result.failed.push(`${item.name} — ${err.message}`);
+    }
+  }
+
+  return result;
 }
 
 // ==========================================================================

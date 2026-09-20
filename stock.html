@@ -184,8 +184,8 @@
             <td style="text-align: center;">
               ${product.image ? `<img src="${product.image}" style="width: 40px; height: 40px; border-radius: 5px;">` : '📦'}
             </td>
-            <td>${product.name}</td>
-            <td>${product.category}</td>
+            <td>${escapeHtml(product.name)}</td>
+            <td>${escapeHtml(product.category)}</td>
             <td class="text-right">${formatCurrency(product.cost)}</td>
             <td class="text-right">${formatCurrency(product.price)}</td>
             <td class="text-right"><strong>${profit}%</strong></td>

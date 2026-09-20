@@ -245,8 +245,8 @@
         ? lowStock.map(p => `
           <div class="list-row">
             <div class="list-main">
-              <div class="list-title">${p.name}</div>
-              <div class="list-sub">${p.category || 'ไม่ระบุประเภท'}</div>
+              <div class="list-title">${escapeHtml(p.name)}</div>
+              <div class="list-sub">${escapeHtml(p.category || 'ไม่ระบุประเภท')}</div>
             </div>
             <span class="badge ${p.quantity === 0 ? 'badge-danger' : 'badge-warning'}">${p.quantity === 0 ? 'หมดสต็อก' : 'เหลือ ' + p.quantity + ' ชิ้น'}</span>
           </div>
@@ -260,13 +260,13 @@
         ? recentSales.map(sale => {
             const first = sale.items[0] || { name: 'ไม่มีรายการ' };
             const label = sale.items.length > 1
-              ? `${first.name} +อีก ${sale.items.length - 1} รายการ`
-              : first.name;
+              ? `${escapeHtml(first.name)} +อีก ${sale.items.length - 1} รายการ`
+              : escapeHtml(first.name);
             return `
           <div class="list-row">
             <div class="list-main">
               <div class="list-title">${label}</div>
-              <div class="list-sub">${formatDate(sale.date)} · ${sale.customer || 'ลูกค้าทั่วไป'}</div>
+              <div class="list-sub">${formatDate(sale.date)} · ${escapeHtml(sale.customer || 'ลูกค้าทั่วไป')}</div>
             </div>
             <div class="list-value">${formatCurrency(sale.total)}</div>
           </div>`;

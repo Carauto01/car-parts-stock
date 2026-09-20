@@ -77,7 +77,7 @@
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
               <span>ส่วนลด:</span>
-              <input type="number" id="discount" step="0.01" value="0" 
+              <input type="number" id="discount" step="0.01" min="0" value="0" 
                 style="width: 80px; padding: 5px; border: 1px solid var(--border); border-radius: 3px;" onchange="calculateTotal()">
             </div>
             <div style="border-top: 1px solid var(--border); padding-top: 10px;">
@@ -167,7 +167,7 @@
       select.innerHTML = '<option value="">-- เลือกสินค้า --</option>';
       products.forEach(p => {
         const soldOut = p.quantity <= 0;
-        select.innerHTML += `<option value="${p.id}" ${soldOut ? 'disabled' : ''}>${p.name} (${formatCurrency(p.price)}) — เหลือ ${p.quantity}</option>`;
+        select.innerHTML += `<option value="${p.id}" ${soldOut ? 'disabled' : ''}>${escapeHtml(p.name)} (${formatCurrency(p.price)}) — เหลือ ${p.quantity}</option>`;
       });
     }
 
@@ -227,7 +227,7 @@
         subtotal += itemTotal;
         html += `
           <tr>
-            <td>${item.name}</td>
+            <td>${escapeHtml(item.name)}</td>
             <td class="text-right">${formatCurrency(item.price)}</td>
             <td class="text-right">
               <input type="number" value="${item.quantity}" min="1" max="${item.maxStock}"
@@ -251,9 +251,20 @@
       calculateTotal();
     }
 
+    // ส่วนลดต้องอยู่ในช่วง 0 ถึงยอดรวมเสมอ
+    // ติดลบจะกลายเป็นบวกยอดบิลเพิ่ม ส่วนเกินยอดรวมจะทำให้ยอดสุทธิติดลบ
+    function readDiscount(subtotal) {
+      const raw = parseFloat(document.getElementById('discount').value) || 0;
+      const clean = Math.min(Math.max(raw, 0), subtotal);
+
+      if (clean !== raw) document.getElementById('discount').value = clean;
+
+      return clean;
+    }
+
     function calculateTotal() {
       const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const discount = parseFloat(document.getElementById('discount').value) || 0;
+      const discount = readDiscount(subtotal);
       const total = subtotal - discount;
       document.getElementById('total').textContent = formatCurrency(Math.max(0, total));
     }
@@ -266,7 +277,7 @@
 
       const saleItems = cart.map(({ id, name, cost, price, quantity }) => ({ id, name, cost, price, quantity }));
       const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const discount = parseFloat(document.getElementById('discount').value) || 0;
+      const discount = readDiscount(subtotal);
       const total = subtotal - discount;
 
       // บันทึกบิลและตัดสต็อกพร้อมกัน ถ้าของไม่พอจะไม่บันทึกอะไรเลย
@@ -304,7 +315,7 @@
       }
 
       const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      const discount = parseFloat(document.getElementById('discount').value) || 0;
+      const discount = readDiscount(subtotal);
 
       showDocument('po', {
         id: Date.now() % 10000,

@@ -209,17 +209,22 @@
         const roleLabel = u.role === 'admin' ? '👑 ผู้ดูแลระบบ' :
                         u.role === 'manager' ? '📊 ผู้จัดการ' : '📦 พนักงาน';
 
+        const active = u.status === 'active';
+
         html += `
           <tr>
-            <td><strong>${u.username}</strong></td>
-            <td>${u.name}</td>
+            <td><strong>${escapeHtml(u.username)}</strong></td>
+            <td>${escapeHtml(u.name)}</td>
             <td>${roleLabel}</td>
-            <td>${u.phone}</td>
+            <td>${escapeHtml(u.phone)}</td>
             <td class="text-center">${statusBadge}</td>
             <td class="text-center">
               <div class="table-actions">
                 <button class="btn-icon primary" onclick="editUser(${u.id})" title="แก้ไข" aria-label="แก้ไข">✏️</button>
                 <button class="btn-icon" onclick="changePassword(${u.id})" title="เปลี่ยนรหัสผ่าน" aria-label="เปลี่ยนรหัสผ่าน">🔐</button>
+                <button class="btn-icon" onclick="toggleStatus(${u.id})"
+                        title="${active ? 'ปิดบัญชี (ใช้กับคนที่ลาออก)' : 'เปิดใช้บัญชีอีกครั้ง'}"
+                        aria-label="${active ? 'ปิดบัญชี' : 'เปิดใช้บัญชี'}">${active ? '🚫' : '♻️'}</button>
                 <button class="btn-icon danger" onclick="deleteUser(${u.id})" title="ลบ" aria-label="ลบ">🗑️</button>
               </div>
             </td>
@@ -341,6 +346,33 @@
         showNotification('❌ เปลี่ยนรหัสผ่านไม่สำเร็จ: ' + err.message, 'error');
       }
     });
+
+    // ปิดบัญชีแทนการลบ — พนักงานลาออกแล้วเข้าระบบไม่ได้ แต่บิลเก่ายังรู้ว่าใครออกให้
+    async function toggleStatus(id) {
+      if (id === user.id) {
+        showNotification('⛔ ปิดบัญชีที่กำลังใช้งานอยู่ไม่ได้', 'error');
+        return;
+      }
+
+      const target = users.find(u => u.id === id);
+      if (!target) return;
+
+      const next = target.status === 'active' ? 'inactive' : 'active';
+
+      const ok = confirm(next === 'inactive'
+        ? `ปิดบัญชี "${target.name}" ใช่หรือไม่?\n\nจะเข้าสู่ระบบไม่ได้อีก และถูกเตะออกจากเครื่องที่ค้างอยู่ทันที\nประวัติการขายเดิมยังอยู่ครบ`
+        : `เปิดใช้บัญชี "${target.name}" อีกครั้งใช่หรือไม่?`);
+      if (!ok) return;
+
+      try {
+        await setUserStatus(id, next);
+        users = getUsers();
+        showNotification(next === 'inactive' ? '🚫 ปิดบัญชีแล้ว' : '♻️ เปิดใช้บัญชีแล้ว', 'success');
+        loadUsers();
+      } catch (err) {
+        showNotification('❌ ' + err.message, 'error');
+      }
+    }
 
     async function deleteUser(id) {
       if (id === user.id) {

@@ -12,13 +12,28 @@ const SUPABASE_READY =
 // Supabase Client (เป็น null เมื่ออยู่ใน Demo Mode)
 let supabaseClient = null;
 
-if (SUPABASE_READY && typeof supabase !== 'undefined') {
-  try {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  } catch (err) {
-    console.warn('[config] เชื่อม Supabase ไม่สำเร็จ ใช้ Demo Mode แทน:', err.message);
+// ต่อฐานข้อมูลไม่ได้ ทั้งที่ตั้งค่าไว้ครบแล้ว — เช่น เน็ตร้านสะดุด หรือโหลดไลบรารีจาก CDN ไม่ผ่าน
+//
+// ⚠️ ห้ามถอยไป Demo Mode ในกรณีนี้เด็ดขาด
+// ของเดิมเคยถอยให้เงียบ ๆ ผลคือพนักงานกรอกสต็อกลง localStorage ของเครื่องตัวเอง
+// เห็นข้อความ "บันทึกสำเร็จ" ตามปกติ แต่ข้อมูลไม่เคยขึ้นเซิร์ฟเวอร์ และไม่มีใครรู้จนสายเกินไป
+// ตอนนี้จึงเลือกที่จะ "ฟ้องเสียงดังแล้วไม่ให้บันทึก" แทนการแกล้งทำเป็นว่าบันทึกได้
+let SUPABASE_FAILED = false;
+
+if (SUPABASE_READY) {
+  if (typeof supabase === 'undefined') {
+    SUPABASE_FAILED = true;
+    console.error('[config] โหลดไลบรารี Supabase ไม่สำเร็จ — ระบบจะไม่ยอมให้บันทึกข้อมูล');
+  } else {
+    try {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch (err) {
+      SUPABASE_FAILED = true;
+      console.error('[config] เชื่อม Supabase ไม่สำเร็จ:', err.message);
+    }
   }
 } else {
+  // ยังไม่ได้กรอกค่าจริงใน config.js — อันนี้คือ Demo Mode ของจริง ตั้งใจให้เป็น
   console.info('[config] Demo Mode — ข้อมูลถูกเก็บใน localStorage ของเบราว์เซอร์');
 }
 

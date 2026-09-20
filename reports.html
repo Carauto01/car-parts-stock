@@ -249,7 +249,7 @@
         
         html += `
           <tr>
-            <td>${p.name}</td>
+            <td>${escapeHtml(p.name)}</td>
             <td class="text-right">${p.quantity}</td>
             <td class="text-right">${formatCurrency(p.cost)}</td>
             <td class="text-right">${formatCurrency(costValue)}</td>
@@ -297,7 +297,7 @@
           
           html += `
             <tr>
-              <td>${p.name}</td>
+              <td>${escapeHtml(p.name)}</td>
               <td class="text-right">${totalSold}</td>
               <td class="text-right">${formatCurrency(totalSaleValue)}</td>
               <td class="text-right">${formatCurrency(totalCost)}</td>

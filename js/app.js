@@ -239,3 +239,90 @@ async function logout() {
   window.location.href = 'index.html';
 }
 
+
+// ==========================================================================
+// กันอักขระพิเศษก่อนเอาข้อความของผู้ใช้ไปแสดงผล
+//
+// ชื่อสินค้าและชื่อลูกค้าเป็นข้อความที่คนพิมพ์เอง ถ้ายัดเข้า innerHTML ตรง ๆ
+// แล้วมีใครพิมพ์แท็ก HTML ลงไป มันจะทำงานจริงตอนเปิดหน้าจอ
+// ==========================================================================
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ==========================================================================
+// แถบเตือนบนหัวจอ — ใช้ร่วมกันทุกหน้า
+// ==========================================================================
+
+// เรื่องต่อฐานข้อมูลไม่ได้ ต้องเตือนแบบปิดไม่ได้ เพราะถ้าพลาดไปจะเสียข้อมูลจริง
+function showBanner(html, tone = 'danger', dismissible = false) {
+  const bar = document.createElement('div');
+  bar.className = `app-banner app-banner-${tone}`;
+  bar.innerHTML = html;
+
+  if (dismissible) {
+    const close = document.createElement('button');
+    close.className = 'app-banner-close';
+    close.setAttribute('aria-label', 'ปิด');
+    close.textContent = '✕';
+    close.onclick = () => bar.remove();
+    bar.appendChild(close);
+  }
+
+  document.body.prepend(bar);
+  document.body.classList.add('has-banner');
+
+  // แถบตรึงอยู่บนสุด ต้องบอกความสูงจริงให้ CSS ดันหัวจอ/เมนูข้างลงมา
+  // ข้อความยาวไม่เท่ากันในแต่ละจอ จึงวัดเอาตอนรันจริง และวัดใหม่เมื่อหมุนจอ
+  const syncHeight = () =>
+    document.documentElement.style.setProperty('--banner-h', bar.offsetHeight + 'px');
+
+  syncHeight();
+  window.addEventListener('resize', syncHeight);
+
+  if (dismissible) {
+    // ปิดแถบแล้วต้องคืนพื้นที่ให้หน้าจอด้วย ไม่งั้นจะเหลือช่องว่างค้าง
+    bar.addEventListener('click', event => {
+      if (!event.target.closest('.app-banner-close')) return;
+      document.body.classList.remove('has-banner');
+      document.documentElement.style.removeProperty('--banner-h');
+      window.removeEventListener('resize', syncHeight);
+    });
+  }
+
+  return bar;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. ต่อฐานข้อมูลไม่ได้ — สำคัญสุด ต้องขึ้นก่อนเพื่อน และปิดไม่ได้
+  if (typeof OFFLINE !== 'undefined' && OFFLINE) {
+    showBanner(
+      '🔴 <b>เชื่อมต่อฐานข้อมูลไม่ได้</b> — ตอนนี้ยังบันทึกอะไรไม่ได้ ' +
+      'กรุณาตรวจอินเทอร์เน็ตแล้วรีเฟรชหน้าจอ <u>อย่าเพิ่งกรอกข้อมูล</u> เพราะจะไม่ถูกบันทึก'
+    );
+    return;   // ต่อไม่ติดก็ไม่ต้องเตือนเรื่องสำรองข้อมูลซ้ำซ้อน
+  }
+
+  // 2. ไม่ได้สำรองข้อมูลมานาน — เตือนเฉพาะคนที่กดสำรองได้จริง
+  const user = typeof getLocalUser === 'function' ? getLocalUser() : null;
+  if (!user || (user.role !== 'admin' && user.role !== 'manager')) return;
+  if (typeof backupIsDue !== 'function' || !backupIsDue()) return;
+  if (location.pathname.endsWith('settings.html')) return;   // อยู่หน้าที่กดสำรองได้อยู่แล้ว
+
+  const days = daysSinceBackup();
+  const backupLabel = days === null ? 'ยังไม่เคยสำรองข้อมูลเลย' : `สำรองข้อมูลครั้งล่าสุดเมื่อ ${days} วันที่แล้ว`;
+
+  showBanner(
+    `🛟 <b>${backupLabel}</b> — ฐานข้อมูลอยู่ที่เดียวและไม่มีแบ็กอัปอัตโนมัติ ` +
+    '<a href="settings.html#backup">กดสำรองข้อมูลตอนนี้</a>',
+    'warning',
+    true
+  );
+});

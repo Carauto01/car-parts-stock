@@ -150,6 +150,33 @@
             💡 ตอนออกใบเสร็จจริง ยังกดแก้ข้อความบนเอกสารได้อีกทีก่อนพิมพ์
           </div>
         </div>
+
+        <!-- สำรองข้อมูล -->
+        <div class="card" id="backup" style="grid-column: 1 / -1;">
+          <h2>🛟 สำรองข้อมูล</h2>
+          <p class="hint">
+            ข้อมูลทั้งร้านอยู่บนฐานข้อมูลกลางที่เดียว และแพลนที่ใช้อยู่ไม่มีการสำรองอัตโนมัติให้
+            ไฟล์ที่โหลดเก็บไว้เองคือสำเนาชุดเดียวที่ร้านมี — ควรโหลดอย่างน้อยสัปดาห์ละครั้ง
+          </p>
+
+          <div id="backupStatus" class="backup-status"></div>
+
+          <div class="backup-actions">
+            <button class="btn btn-primary" onclick="doBackup()">💾 โหลดไฟล์สำรองข้อมูล</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('restoreFile').click()">
+              ♻️ กู้คืนรายการสินค้าจากไฟล์สำรอง
+            </button>
+            <input type="file" id="restoreFile" accept=".json,application/json" hidden onchange="doRestore(this)">
+          </div>
+
+          <div id="backupResult" class="backup-result" hidden></div>
+
+          <div class="alert alert-warning" style="margin-top: 14px; margin-bottom: 0;">
+            ⚠️ การกู้คืนจะนำกลับมาเฉพาะ <b>รายการสินค้า</b> เท่านั้น ไม่รวมบิลขายเก่า
+            เพราะการบันทึกบิลย้อนหลังจะไปตัดสต็อกซ้ำอีกรอบ ทำให้ยอดเพี้ยนหนักกว่าเดิม
+            (ประวัติการขายยังเปิดดูได้จากในไฟล์สำรอง)
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -313,7 +340,87 @@
       document.getElementById('previewModal').style.display = 'block';
     }
 
-    dataReady.then(() => fillForm(getSettings()));
+    // ------------------------------------------------------------------
+    // สำรองข้อมูล / กู้คืน
+    // ------------------------------------------------------------------
+
+    function renderBackupStatus() {
+      const box = document.getElementById('backupStatus');
+      const days = daysSinceBackup();
+
+      if (days === null) {
+        box.className = 'backup-status is-due';
+        box.innerHTML = '⚠️ <b>ยังไม่เคยสำรองข้อมูลจากเครื่องนี้เลย</b>';
+      } else if (days >= 7) {
+        box.className = 'backup-status is-due';
+        box.innerHTML = `⚠️ สำรองครั้งล่าสุดเมื่อ <b>${days} วันที่แล้ว</b> — ถึงเวลาสำรองใหม่`;
+      } else {
+        box.className = 'backup-status is-ok';
+        box.innerHTML = days === 0
+          ? '✅ สำรองข้อมูลแล้ววันนี้'
+          : `✅ สำรองครั้งล่าสุดเมื่อ <b>${days} วันที่แล้ว</b>`;
+      }
+
+      // วันที่สำรองจำไว้ในเครื่องที่กดเท่านั้น เครื่องอื่นจะไม่เห็นค่านี้
+      box.innerHTML += ' <span style="color: var(--text-faint);">(นับเฉพาะเครื่องนี้)</span>';
+    }
+
+    function doBackup() {
+      try {
+        const backup = downloadBackup();
+        showNotification(`💾 สำรองแล้ว — สินค้า ${backup.products.length} รายการ, บิล ${backup.sales.length} ใบ`, 'success');
+        renderBackupStatus();
+      } catch (err) {
+        showNotification('⚠️ ' + err.message, 'error');
+      }
+    }
+
+    async function doRestore(input) {
+      const file = input.files && input.files[0];
+      input.value = '';                       // เคลียร์ไว้ เผื่อเลือกไฟล์เดิมซ้ำ
+      if (!file) return;
+
+      const box = document.getElementById('backupResult');
+      box.hidden = false;
+      box.textContent = '⏳ กำลังอ่านไฟล์...';
+
+      let data;
+      try {
+        data = parseBackup(await file.text());
+      } catch (err) {
+        box.innerHTML = `❌ ${escapeHtml(err.message)}`;
+        return;
+      }
+
+      const when = new Date(data.exportedAt).toLocaleDateString('th-TH');
+      const ok = confirm(
+        `ไฟล์สำรองวันที่ ${when}\n` +
+        `มีสินค้า ${data.products.length} รายการ\n\n` +
+        `สินค้าที่ชื่อตรงกับของเดิมจะถูกเขียนทับด้วยค่าจากไฟล์ ที่เหลือจะเพิ่มเข้ามาใหม่\n\n` +
+        `ยืนยันกู้คืนหรือไม่?`
+      );
+      if (!ok) { box.hidden = true; return; }
+
+      box.textContent = '⏳ กำลังกู้คืน...';
+
+      try {
+        const result = await restoreProducts(data);
+        let html = `✅ กู้คืนเสร็จ — เพิ่มใหม่ <b>${result.added}</b> รายการ, เขียนทับของเดิม <b>${result.updated}</b> รายการ`;
+        if (result.failed.length) {
+          html += `<br>❌ ไม่สำเร็จ ${result.failed.length} รายการ:<br>` +
+                  result.failed.map(f => '· ' + escapeHtml(f)).join('<br>');
+        }
+        box.innerHTML = html;
+        showNotification('♻️ กู้คืนรายการสินค้าเรียบร้อย', 'success');
+      } catch (err) {
+        box.innerHTML = `❌ ${escapeHtml(err.message)}`;
+      }
+    }
+
+    dataReady.then(() => {
+      fillForm(getSettings());
+      renderBackupStatus();
+    });
   </script>
 </body>
 </html>
